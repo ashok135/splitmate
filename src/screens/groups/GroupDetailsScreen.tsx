@@ -21,6 +21,8 @@ import { ExpenseCard } from '../../components/ExpenseCard';
 import { Button } from '../../components/Button';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { Icon } from '../../components/Icon';
+import { monthlyLedgerService } from '../../services/monthlyLedgerService';
+import { calculateBalances, simplifyDebts } from '../../utils/splitCalculator';
 import { formatINR } from '../../utils/currency';
 
 type GroupDetailsRouteProp = RouteProp<RootStackParamList, 'GroupDetails'>;
@@ -87,11 +89,33 @@ export const GroupDetailsScreen = () => {
   const group = groups.find((g) => g.groupId === groupId);
   const groupMembers = members[groupId] || [];
 
-  const { expenses, settlements, balances, debts, refreshGroupData, loading } = useExpenses(groupId);
+  const { expenses, settlements, refreshGroupData, loading } = useExpenses(groupId);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // Month-isolated ledger calculations (Current Month)
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentMonthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+  const currentMonthExpenses = useMemo(() => {
+    return monthlyLedgerService.filterByMonth(expenses, currentYear, currentMonth);
+  }, [expenses, currentYear, currentMonth]);
+
+  const currentMonthSettlements = useMemo(() => {
+    return monthlyLedgerService.filterByMonth(settlements, currentYear, currentMonth);
+  }, [settlements, currentYear, currentMonth]);
+
+  const currentMonthBalances = useMemo(() => {
+    return calculateBalances(groupMembers, currentMonthExpenses, currentMonthSettlements);
+  }, [groupMembers, currentMonthExpenses, currentMonthSettlements]);
+
+  const currentMonthDebts = useMemo(() => {
+    return simplifyDebts(currentMonthBalances);
+  }, [currentMonthBalances]);
 
   useEffect(() => {
     fetchMembers(groupId).then((mList) => {
@@ -109,16 +133,16 @@ export const GroupDetailsScreen = () => {
   const isDefault = user?.defaultGroupId === groupId;
   // If createdBy matches user.uid or is not explicitly set, allow creator actions
   const isOwner = !group?.createdBy || group?.createdBy === user?.uid;
-  const userBalance = user?.uid && balances[user.uid] ? balances[user.uid].netBalance : 0;
+  const userBalance = user?.uid && currentMonthBalances[user.uid] ? currentMonthBalances[user.uid].netBalance : 0;
 
   const totalGroupExpenses = useMemo(() => {
-    return expenses.reduce((sum, e) => sum + e.amount, 0);
-  }, [expenses]);
+    return currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [currentMonthExpenses]);
 
   const handleDeleteGroup = () => {
     setMenuVisible(false);
     Alert.alert(
-      '🗑️ Delete Group',
+      'Delete Group',
       `Are you sure you want to permanently delete "${group?.name}"? All expenses, settlements, and balances will be removed. This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -231,9 +255,9 @@ export const GroupDetailsScreen = () => {
         {/* Balance Card */}
         <BalanceCard
           netBalance={userBalance}
-          totalPaid={user?.uid ? (balances[user.uid]?.expensePaid ?? balances[user.uid]?.totalPaid) : undefined}
-          totalOwed={user?.uid ? (balances[user.uid]?.expenseShare ?? balances[user.uid]?.totalOwed) : undefined}
-          groupName={`Total Expenses: ${formatINR(totalGroupExpenses)}`}
+          totalPaid={user?.uid ? (currentMonthBalances[user.uid]?.expensePaid ?? currentMonthBalances[user.uid]?.totalPaid) : undefined}
+          totalOwed={user?.uid ? (currentMonthBalances[user.uid]?.expenseShare ?? currentMonthBalances[user.uid]?.totalOwed) : undefined}
+          groupName={`${currentMonthLabel} • Total: ${formatINR(totalGroupExpenses)}`}
         />
 
         {/* Action Buttons */}
@@ -251,12 +275,12 @@ export const GroupDetailsScreen = () => {
           />
         </View>
 
-        {/* Who Owes Whom (Simplified Debts) */}
-        {debts.length > 0 && (
+        {/* Who Owes Whom (Simplified Debts for Current Month) */}
+        {currentMonthDebts.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Who Owes Whom</Text>
+            <Text style={styles.sectionTitle}>Who Owes Whom ({currentMonthLabel})</Text>
             <View style={styles.debtCard}>
-              {debts.map((debt, index) => {
+              {currentMonthDebts.map((debt, index) => {
                 const isUserDebtor = debt.fromUserId === user?.uid;
                 const isUserCreditor = debt.toUserId === user?.uid;
 

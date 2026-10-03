@@ -25,7 +25,8 @@ import { smsService } from '../../services/smsService';
 import { dummyDataService } from '../../services/dummyDataService';
 import { Icon } from '../../components/Icon';
 import { ParsedTransaction } from '../../types/sms';
-import { calculateEqualSplit } from '../../utils/splitCalculator';
+import { monthlyLedgerService } from '../../services/monthlyLedgerService';
+import { calculateEqualSplit, calculateBalances, simplifyDebts } from '../../utils/splitCalculator';
 import { formatINR } from '../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -53,32 +54,55 @@ export const HomeScreen = () => {
   const {
     expenses,
     settlements,
-    balances,
-    debts,
     refreshGroupData,
     createExpense,
     loading: expensesLoading,
   } = useExpenses(defaultGroupId);
 
-  // User's balance in default group
-  const userBalance = user?.uid && balances[user.uid] ? balances[user.uid].netBalance : 0;
-  const totalPaid = user?.uid && balances[user.uid] ? (balances[user.uid].expensePaid ?? balances[user.uid].totalPaid) : 0;
-  const totalOwed = user?.uid && balances[user.uid] ? (balances[user.uid].expenseShare ?? balances[user.uid].totalOwed) : 0;
+  // Month-isolated ledger calculations (Current Month starts from scratch!)
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentMonthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-  // Monthly totals
+  // Filter expenses and settlements strictly for the active month
+  const currentMonthExpenses = useMemo(() => {
+    return monthlyLedgerService.filterByMonth(expenses, currentYear, currentMonth);
+  }, [expenses, currentYear, currentMonth]);
+
+  const currentMonthSettlements = useMemo(() => {
+    return monthlyLedgerService.filterByMonth(settlements, currentYear, currentMonth);
+  }, [settlements, currentYear, currentMonth]);
+
+  // Clean balance calculation for this month only
+  const currentMonthBalances = useMemo(() => {
+    return calculateBalances(groupMembers, currentMonthExpenses, currentMonthSettlements);
+  }, [groupMembers, currentMonthExpenses, currentMonthSettlements]);
+
+  // Debts to settle strictly for this active month
+  const currentMonthDebts = useMemo(() => {
+    return simplifyDebts(currentMonthBalances);
+  }, [currentMonthBalances]);
+
+  // User's balance in current active month
+  const userBalance = user?.uid && currentMonthBalances[user.uid] ? currentMonthBalances[user.uid].netBalance : 0;
+  const totalPaid = user?.uid && currentMonthBalances[user.uid] ? (currentMonthBalances[user.uid].expensePaid ?? currentMonthBalances[user.uid].totalPaid) : 0;
+  const totalOwed = user?.uid && currentMonthBalances[user.uid] ? (currentMonthBalances[user.uid].expenseShare ?? currentMonthBalances[user.uid].totalOwed) : 0;
+
+  // Current active month's group total expenses
   const totalGroupExpenses = useMemo(() => {
-    return expenses.reduce((sum, e) => sum + e.amount, 0);
-  }, [expenses]);
+    return currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [currentMonthExpenses]);
 
-  // Outstanding debts where current user is debtor (has to pay)
+  // Outstanding debts where current user is debtor (has to pay for this month)
   const myDebtsToPay = useMemo(() => {
-    return debts.filter((d) => d.fromUserId === user?.uid);
-  }, [debts, user?.uid]);
+    return currentMonthDebts.filter((d) => d.fromUserId === user?.uid);
+  }, [currentMonthDebts, user?.uid]);
 
-  // Debts where others owe current user
+  // Debts where others owe current user for this month
   const debtsOwedToMe = useMemo(() => {
-    return debts.filter((d) => d.toUserId === user?.uid);
-  }, [debts, user?.uid]);
+    return currentMonthDebts.filter((d) => d.toUserId === user?.uid);
+  }, [currentMonthDebts, user?.uid]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -155,7 +179,7 @@ export const HomeScreen = () => {
               await fetchUserGroups();
               const mList = await fetchMembers(group.groupId);
               await refreshGroupData(group.groupId, mList);
-              Alert.alert('🎉 Demo Loaded!', '4-member group created with full monthly expenses and balances.');
+              Alert.alert('Demo Loaded!', '4-member group created with full monthly expenses and balances.');
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to create demo data');
             } finally {
@@ -336,10 +360,10 @@ export const HomeScreen = () => {
               </Text>
               <Text style={styles.bigAmountSub}>
                 {userBalance < 0
-                  ? 'Your outstanding balance to clear this month'
+                  ? `Your outstanding balance to clear for ${currentMonthLabel}`
                   : userBalance > 0
-                  ? 'Total amount friends need to pay you'
-                  : 'You have cleared all payments for this month'}
+                  ? `Amount friends need to pay you for ${currentMonthLabel}`
+                  : `You have cleared all payments for ${currentMonthLabel}`}
               </Text>
             </View>
 
@@ -466,9 +490,9 @@ export const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Direct Debts summary */}
-            {debts.length > 0 ? (
+            {currentMonthDebts.length > 0 ? (
               <View style={styles.debtsList}>
-                {debts.map((d, index) => {
+                {currentMonthDebts.map((d, index) => {
                   const isMeDebtor = d.fromUserId === user?.uid;
                   const isMeCreditor = d.toUserId === user?.uid;
                   return (
@@ -549,7 +573,7 @@ export const HomeScreen = () => {
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.membersScroll}>
               {groupMembers.map((m) => {
-                const bal = balances[m.uid]?.netBalance || 0;
+                const bal = currentMonthBalances[m.uid]?.netBalance || 0;
                 const isMe = m.uid === user?.uid;
                 return (
                   <View key={m.uid} style={styles.memberChip}>
