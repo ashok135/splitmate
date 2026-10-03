@@ -35,6 +35,7 @@ export type RootStackParamList = {
   };
   Settlement: {
     groupId: string;
+    fromUserId?: string;
     toUserId?: string;
     suggestedAmount?: number;
   };

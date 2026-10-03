@@ -268,9 +268,14 @@ export const GroupDetailsScreen = () => {
             style={styles.addBtn}
           />
           <Button
-            title="Settle Up"
+            title={userBalance > 0 ? 'Receive Payment' : userBalance < 0 ? 'Pay Dues' : 'Transfer'}
             variant="outline"
-            onPress={() => navigation.navigate('Settlement', { groupId })}
+            onPress={() =>
+              navigation.navigate('Settlement', {
+                groupId,
+                ...(userBalance > 0 ? { toUserId: user?.uid } : userBalance < 0 ? { fromUserId: user?.uid } : {}),
+              })
+            }
             style={styles.settleBtn}
           />
         </View>
@@ -299,12 +304,13 @@ export const GroupDetailsScreen = () => {
                     </View>
                     <View style={styles.debtAction}>
                       <Text style={styles.debtAmount}>{formatINR(debt.amount)}</Text>
-                      {isUserDebtor && (
+                      {isUserDebtor ? (
                         <TouchableOpacity
                           style={styles.payBtn}
                           onPress={() =>
                             navigation.navigate('Settlement', {
                               groupId,
+                              fromUserId: user?.uid,
                               toUserId: debt.toUserId,
                               suggestedAmount: debt.amount,
                             })
@@ -312,7 +318,21 @@ export const GroupDetailsScreen = () => {
                         >
                           <Text style={styles.payBtnText}>Pay</Text>
                         </TouchableOpacity>
-                      )}
+                      ) : isUserCreditor ? (
+                        <TouchableOpacity
+                          style={styles.receivedBtn}
+                          onPress={() =>
+                            navigation.navigate('Settlement', {
+                              groupId,
+                              fromUserId: debt.fromUserId,
+                              toUserId: user?.uid,
+                              suggestedAmount: debt.amount,
+                            })
+                          }
+                        >
+                          <Text style={styles.receivedBtnText}>Received</Text>
+                        </TouchableOpacity>
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -660,12 +680,23 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   payBtn: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   payBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  receivedBtn: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  receivedBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',

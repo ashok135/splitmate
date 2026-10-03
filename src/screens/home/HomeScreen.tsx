@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
@@ -118,13 +118,15 @@ export const HomeScreen = () => {
     fetchUserGroups();
   }, [fetchUserGroups]);
 
-  useEffect(() => {
-    if (defaultGroupId) {
-      fetchMembers(defaultGroupId).then((mList) => {
-        refreshGroupData(defaultGroupId, mList);
-      });
-    }
-  }, [defaultGroupId, fetchMembers, refreshGroupData]);
+  useFocusEffect(
+    useCallback(() => {
+      if (defaultGroupId) {
+        fetchMembers(defaultGroupId).then((mList) => {
+          refreshGroupData(defaultGroupId, mList);
+        });
+      }
+    }, [defaultGroupId, fetchMembers, refreshGroupData])
+  );
 
   // Listen for native SMS transactions
   useEffect(() => {
@@ -390,14 +392,50 @@ export const HomeScreen = () => {
               {userBalance < 0 ? (
                 <TouchableOpacity
                   style={styles.heroSettleBtn}
-                  onPress={() => navigation.navigate('Settlement', { groupId: defaultGroup.groupId })}
+                  onPress={() =>
+                    navigation.navigate('Settlement', {
+                      groupId: defaultGroup.groupId,
+                      fromUserId: user?.uid,
+                      suggestedAmount: Math.abs(userBalance),
+                    })
+                  }
                   activeOpacity={0.8}
                 >
                   <View style={styles.iconTextInline}>
-                    <Icon name="check" size={16} color="#FFFFFF" />
-                    <Text style={styles.heroSettleBtnText}> Settle Month's Dues</Text>
+                    <Icon name="arrow-up-right" size={16} color="#FFFFFF" />
+                    <Text style={styles.heroSettleBtnText}>
+                      {' '}Pay Your Share ({formatINR(Math.abs(userBalance))})
+                    </Text>
                   </View>
                 </TouchableOpacity>
+              ) : userBalance > 0 ? (
+                <View style={styles.heroTwoBtnsRow}>
+                  <TouchableOpacity
+                    style={[styles.heroAddBtn, { flex: 1 }]}
+                    onPress={() => navigation.navigate('AddExpense', { groupId: defaultGroup.groupId })}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.iconTextInline}>
+                      <Icon name="plus" size={16} color="#FFFFFF" />
+                      <Text style={styles.heroAddBtnText}> Add Expense</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.heroReceiveBtn, { flex: 1.2 }]}
+                    onPress={() =>
+                      navigation.navigate('Settlement', {
+                        groupId: defaultGroup.groupId,
+                        toUserId: user?.uid,
+                      })
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.iconTextInline}>
+                      <Icon name="arrow-down-left" size={16} color="#FFFFFF" />
+                      <Text style={styles.heroReceiveBtnText}> Record Received</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <TouchableOpacity
                   style={styles.heroAddBtn}
@@ -435,24 +473,6 @@ export const HomeScreen = () => {
           </View>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* QUICK ACTION BUTTONS */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {defaultGroup && (
-          <View style={styles.quickAddRow}>
-            <Button
-              title="+ Add Expense"
-              onPress={() => navigation.navigate('AddExpense', { groupId: defaultGroup.groupId })}
-              style={styles.quickAddBtn}
-            />
-            <Button
-              title="Settle Up"
-              variant="outline"
-              onPress={() => navigation.navigate('Settlement', { groupId: defaultGroup.groupId })}
-              style={styles.settleBtn}
-            />
-          </View>
-        )}
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* MONTHLY SETTLEMENT CYCLE ("home setle we do montly once make it") */}
@@ -471,9 +491,20 @@ export const HomeScreen = () => {
               </View>
               <TouchableOpacity
                 style={styles.settleCyclePill}
-                onPress={() => navigation.navigate('Settlement', { groupId: defaultGroup.groupId })}
+                onPress={() =>
+                  navigation.navigate('Settlement', {
+                    groupId: defaultGroup.groupId,
+                    ...(userBalance > 0
+                      ? { toUserId: user?.uid }
+                      : userBalance < 0
+                      ? { fromUserId: user?.uid }
+                      : {}),
+                  })
+                }
               >
-                <Text style={styles.settleCyclePillText}>Settle All →</Text>
+                <Text style={styles.settleCyclePillText}>
+                  {userBalance > 0 ? 'Record Payment →' : userBalance < 0 ? 'Settle Dues →' : 'Transfer →'}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -527,18 +558,33 @@ export const HomeScreen = () => {
                         >
                           {formatINR(d.amount)}
                         </Text>
-                        {isMeDebtor && (
+                        {isMeDebtor ? (
                           <TouchableOpacity
                             style={styles.payNowBtn}
                             onPress={() =>
                               navigation.navigate('Settlement', {
                                 groupId: defaultGroup.groupId,
+                                fromUserId: user?.uid,
                                 toUserId: d.toUserId,
                                 suggestedAmount: d.amount,
                               })
                             }
                           >
                             <Text style={styles.payNowBtnText}>Pay</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.receivedBtn}
+                            onPress={() =>
+                              navigation.navigate('Settlement', {
+                                groupId: defaultGroup.groupId,
+                                fromUserId: d.fromUserId,
+                                toUserId: user?.uid,
+                                suggestedAmount: d.amount,
+                              })
+                            }
+                          >
+                            <Text style={styles.receivedBtnText}>Received</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -552,6 +598,55 @@ export const HomeScreen = () => {
                   <Icon name="check-circle" size={15} color="#15803D" />
                   <Text style={styles.noDebtsText}> All flatmates are settled up for this month!</Text>
                 </View>
+              </View>
+            )}
+
+            {/* Settlements Recorded This Month */}
+            {currentMonthSettlements.length > 0 && (
+              <View style={styles.settlementsSection}>
+                <View style={styles.settlementsHeaderRow}>
+                  <View style={styles.iconTextInline}>
+                    <Icon name="check-circle" size={14} color="#059669" />
+                    <Text style={styles.settlementsSectionTitle}>
+                      {' '}Settled Payments This Month ({currentMonthSettlements.length})
+                    </Text>
+                  </View>
+                </View>
+
+                {currentMonthSettlements.map((s) => {
+                  const fromM = groupMembers.find((m) => m.uid === s.fromUserId);
+                  const toM = groupMembers.find((m) => m.uid === s.toUserId);
+                  const isPayerMe = s.fromUserId === user?.uid;
+                  const isReceiverMe = s.toUserId === user?.uid;
+                  const fromName = isPayerMe ? 'You' : fromM?.displayName || 'Member';
+                  const toName = isReceiverMe ? 'you' : toM?.displayName || 'Member';
+
+                  return (
+                    <View key={s.settlementId} style={styles.settlementCardRow}>
+                      <View style={styles.settlementCardLeft}>
+                        <View style={styles.settledCheckCircle}>
+                          <Icon name="check" size={12} color="#059669" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.settlementCardTitle}>
+                            <Text style={{ fontWeight: '800', color: '#0F172A' }}>{fromName}</Text>
+                            {' paid '}
+                            <Text style={{ fontWeight: '800', color: '#0F172A' }}>{toName}</Text>
+                          </Text>
+                          <Text style={styles.settlementCardSub}>
+                            {s.notes || 'Direct payment recorded'}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.settlementCardRight}>
+                        <Text style={styles.settlementCardAmount}>{formatINR(s.amount)}</Text>
+                        <View style={styles.settledBadge}>
+                          <Text style={styles.settledBadgeText}>SETTLED</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             )}
           </View>
@@ -887,6 +982,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
+  heroTwoBtnsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  heroReceiveBtn: {
+    backgroundColor: '#16A34A',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  heroReceiveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   noGroupHero: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -998,7 +1108,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   payNowBtn: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 6,
@@ -1007,6 +1117,87 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  receivedBtn: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  receivedBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  settlementsSection: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  settlementsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  settlementsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  settlementCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  settlementCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  settledCheckCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settlementCardTitle: {
+    fontSize: 13,
+    color: '#1E293B',
+  },
+  settlementCardSub: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  settlementCardRight: {
+    alignItems: 'flex-end',
+  },
+  settlementCardAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  settledBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 2,
+  },
+  settledBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#15803D',
   },
   noDebtsBox: {
     backgroundColor: '#F0FDF4',
