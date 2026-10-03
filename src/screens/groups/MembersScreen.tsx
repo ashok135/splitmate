@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGroups } from '../../hooks/useGroups';
 import { groupService } from '../../services/groupService';
 import { MemberAvatar } from '../../components/MemberAvatar';
-import { Button } from '../../components/Button';
 import { GroupMember } from '../../types/group';
 
 type MembersRouteProp = RouteProp<RootStackParamList, 'Members'>;

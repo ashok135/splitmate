@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Share,
 } from 'react-native';
-import { Expense, Settlement, UserBalance, Debt } from '../types/expense';
+import { Expense, Settlement } from '../types/expense';
 import { GroupMember } from '../types/group';
 import { Icon } from './Icon';
 import { MemberAvatar } from './MemberAvatar';

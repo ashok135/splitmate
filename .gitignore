@@ -10,6 +10,7 @@ android/app/build/
 android/build/
 android/local.properties
 *.apk
+!release/*.apk
 *.aab
 
 # iOS build outputs & CocoaPods

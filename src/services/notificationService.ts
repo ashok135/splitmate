@@ -169,7 +169,6 @@ export const notificationService = {
       settlementId,
       fromUserId,
       fromUserName,
-      toUserId,
       toUserName,
       amount,
       notes,
@@ -180,7 +179,7 @@ export const notificationService = {
     const notificationId = notifRef.id;
     const now = Date.now();
 
-    const title = '🤝 Settlement recorded';
+    const title = 'Settlement recorded';
     const body = `${fromUserName} paid ₹${amount} to ${toUserName} in ${groupName}${
       notes ? ` • ${notes}` : ''
     }`;

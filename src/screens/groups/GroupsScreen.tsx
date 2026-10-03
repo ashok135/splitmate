@@ -6,7 +6,6 @@ import {
   StyleSheet,
   SafeAreaView,
   RefreshControl,
-  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,7 +21,7 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 export const GroupsScreen = () => {
   const navigation = useNavigation<NavProp>();
   const { user } = useAuth();
-  const { groups, fetchUserGroups, loading } = useGroups();
+  const { groups, fetchUserGroups } = useGroups();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {

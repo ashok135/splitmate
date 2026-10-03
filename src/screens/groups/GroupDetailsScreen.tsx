@@ -17,7 +17,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGroups } from '../../hooks/useGroups';
 import { useExpenses } from '../../hooks/useExpenses';
 import { BalanceCard } from '../../components/BalanceCard';
-import { ExpenseCard } from '../../components/ExpenseCard';
 import { Button } from '../../components/Button';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { Icon } from '../../components/Icon';
@@ -77,7 +76,7 @@ const skeletonStyles = StyleSheet.create({
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 import { MonthlyHistoryList } from '../../components/MonthlyHistoryList';
 import { MonthlyReportModal } from '../../components/MonthlyReportModal';
-import { Modal, Clipboard } from 'react-native';
+import { Modal } from 'react-native';
 
 export const GroupDetailsScreen = () => {
   const route = useRoute<GroupDetailsRouteProp>();

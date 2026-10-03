@@ -17,7 +17,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGroups } from '../../hooks/useGroups';
 import { useExpenses } from '../../hooks/useExpenses';
 import { Button } from '../../components/Button';
-import { EmptyState } from '../../components/EmptyState';
 import { MonthlyHistoryList } from '../../components/MonthlyHistoryList';
 import { MonthlyReportModal } from '../../components/MonthlyReportModal';
 import { MemberAvatar } from '../../components/MemberAvatar';
@@ -56,7 +55,6 @@ export const HomeScreen = () => {
     settlements,
     refreshGroupData,
     createExpense,
-    loading: expensesLoading,
   } = useExpenses(defaultGroupId);
 
   // Month-isolated ledger calculations (Current Month starts from scratch!)
@@ -93,16 +91,6 @@ export const HomeScreen = () => {
   const totalGroupExpenses = useMemo(() => {
     return currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
   }, [currentMonthExpenses]);
-
-  // Outstanding debts where current user is debtor (has to pay for this month)
-  const myDebtsToPay = useMemo(() => {
-    return currentMonthDebts.filter((d) => d.fromUserId === user?.uid);
-  }, [currentMonthDebts, user?.uid]);
-
-  // Debts where others owe current user for this month
-  const debtsOwedToMe = useMemo(() => {
-    return currentMonthDebts.filter((d) => d.toUserId === user?.uid);
-  }, [currentMonthDebts, user?.uid]);
 
   const onRefresh = async () => {
     setRefreshing(true);

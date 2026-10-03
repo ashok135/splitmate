@@ -1,4 +1,4 @@
-import { ParsedTransaction, TransactionType } from '../types/sms';
+import { ParsedTransaction } from '../types/sms';
 
 /**
  * Generates a deterministic hash/fingerprint for duplicate transaction protection.
@@ -104,24 +104,18 @@ export const parseBankTransactionSms = (
   }
 
   // 2. Determine Transaction Type (DEBIT vs CREDIT)
-  let type: TransactionType = 'UNKNOWN';
   const isDebit = /\b(debited|spent|paid|withdrawn|deducted|purchase of|debit of|sent to)\b/i.test(trimmed);
   const isCredit = /\b(credited|received|deposit|deposited)\b/i.test(trimmed);
 
-  if (isDebit && !isCredit) {
-    type = 'DEBIT';
-  } else if (isCredit && !isDebit) {
-    type = 'CREDIT';
+  if (isCredit && !isDebit) {
     // As per MVP requirement: Initially support DEBIT transactions only
     return {
       ...emptyResult,
       isTransaction: true,
       type: 'CREDIT',
     };
-  } else if (isDebit && isCredit) {
-    // If both appear, check context: "credited ... debited"
-    type = 'DEBIT';
-  } else {
+  }
+  if (!isDebit) {
     return emptyResult;
   }
 
