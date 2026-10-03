@@ -41,6 +41,8 @@ export interface UserBalance {
   displayName: string;
   totalPaid: number;
   totalOwed: number;
+  expensePaid?: number;
+  expenseShare?: number;
   netBalance: number; // positive = owed money, negative = owes money
 }
 

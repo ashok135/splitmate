@@ -231,8 +231,8 @@ export const GroupDetailsScreen = () => {
         {/* Balance Card */}
         <BalanceCard
           netBalance={userBalance}
-          totalPaid={user?.uid ? balances[user.uid]?.totalPaid : undefined}
-          totalOwed={user?.uid ? balances[user.uid]?.totalOwed : undefined}
+          totalPaid={user?.uid ? (balances[user.uid]?.expensePaid ?? balances[user.uid]?.totalPaid) : undefined}
+          totalOwed={user?.uid ? (balances[user.uid]?.expenseShare ?? balances[user.uid]?.totalOwed) : undefined}
           groupName={`Total Expenses: ${formatINR(totalGroupExpenses)}`}
         />
 

@@ -62,8 +62,8 @@ export const HomeScreen = () => {
 
   // User's balance in default group
   const userBalance = user?.uid && balances[user.uid] ? balances[user.uid].netBalance : 0;
-  const totalPaid = user?.uid && balances[user.uid] ? balances[user.uid].totalPaid : 0;
-  const totalOwed = user?.uid && balances[user.uid] ? balances[user.uid].totalOwed : 0;
+  const totalPaid = user?.uid && balances[user.uid] ? (balances[user.uid].expensePaid ?? balances[user.uid].totalPaid) : 0;
+  const totalOwed = user?.uid && balances[user.uid] ? (balances[user.uid].expenseShare ?? balances[user.uid].totalOwed) : 0;
 
   // Monthly totals
   const totalGroupExpenses = useMemo(() => {

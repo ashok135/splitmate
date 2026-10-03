@@ -182,6 +182,8 @@ export const calculateBalances = (
   const balances: Record<string, UserBalance> = {};
   const paidPaise: Record<string, number> = {};
   const owedPaise: Record<string, number> = {};
+  const expensePaidPaise: Record<string, number> = {};
+  const expenseSharePaise: Record<string, number> = {};
 
   // Helper to ensure member is initialized
   const ensureMember = (uid: string, name?: string) => {
@@ -191,10 +193,14 @@ export const calculateBalances = (
         displayName: name || 'Member',
         totalPaid: 0,
         totalOwed: 0,
+        expensePaid: 0,
+        expenseShare: 0,
         netBalance: 0,
       };
       paidPaise[uid] = 0;
       owedPaise[uid] = 0;
+      expensePaidPaise[uid] = 0;
+      expenseSharePaise[uid] = 0;
     }
   };
 
@@ -207,25 +213,29 @@ export const calculateBalances = (
   expenses.forEach((expense) => {
     const payerId = expense.paidBy;
     ensureMember(payerId);
-    paidPaise[payerId] += rupeesToPaise(expense.amount);
+    const amountP = rupeesToPaise(expense.amount);
+    paidPaise[payerId] += amountP;
+    expensePaidPaise[payerId] += amountP;
 
     if (expense.splits && Object.keys(expense.splits).length > 0) {
       Object.values(expense.splits).forEach((split) => {
         ensureMember(split.userId);
         const splitPaise = split.amountOwedPaise ?? rupeesToPaise(split.amountOwed);
         owedPaise[split.userId] += splitPaise;
+        expenseSharePaise[split.userId] += splitPaise;
       });
     } else {
       // Fallback: If no splits recorded, distribute equally across group members
       const activeMembers = members.length > 0 ? members : [{ uid: payerId, displayName: 'Payer' } as GroupMember];
       const count = activeMembers.length;
-      const totalP = rupeesToPaise(expense.amount);
-      const base = Math.floor(totalP / count);
-      let rem = totalP % count;
+      const base = Math.floor(amountP / count);
+      let rem = amountP % count;
 
       activeMembers.forEach((m) => {
         ensureMember(m.uid, m.displayName);
-        owedPaise[m.uid] += base + (rem > 0 ? 1 : 0);
+        const portion = base + (rem > 0 ? 1 : 0);
+        owedPaise[m.uid] += portion;
+        expenseSharePaise[m.uid] += portion;
         if (rem > 0) rem--;
       });
     }
@@ -244,6 +254,8 @@ export const calculateBalances = (
     const b = balances[uid];
     b.totalPaid = paiseToRupees(paidPaise[uid]);
     b.totalOwed = paiseToRupees(owedPaise[uid]);
+    b.expensePaid = paiseToRupees(expensePaidPaise[uid] || 0);
+    b.expenseShare = paiseToRupees(expenseSharePaise[uid] || 0);
     b.netBalance = paiseToRupees(paidPaise[uid] - owedPaise[uid]);
   });
 

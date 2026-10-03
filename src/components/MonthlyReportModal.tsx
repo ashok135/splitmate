@@ -200,12 +200,12 @@ export const MonthlyReportModal: React.FC<MonthlyReportModalProps> = ({
               <View style={styles.myStatStrip}>
                 <View style={styles.statBox}>
                   <Text style={styles.statBoxLabel}>You Paid</Text>
-                  <Text style={styles.statBoxVal}>{formatINR(myBalance.totalPaid)}</Text>
+                  <Text style={styles.statBoxVal}>{formatINR(myBalance.expensePaid ?? myBalance.totalPaid)}</Text>
                 </View>
                 <View style={styles.statBoxDivider} />
                 <View style={styles.statBox}>
                   <Text style={styles.statBoxLabel}>Your Share</Text>
-                  <Text style={styles.statBoxVal}>{formatINR(myBalance.totalOwed)}</Text>
+                  <Text style={styles.statBoxVal}>{formatINR(myBalance.expenseShare ?? myBalance.totalOwed)}</Text>
                 </View>
                 <View style={styles.statBoxDivider} />
                 <View style={styles.statBox}>
@@ -265,7 +265,7 @@ export const MonthlyReportModal: React.FC<MonthlyReportModalProps> = ({
                     <View style={styles.memberInfoCol}>
                       <Text style={styles.memberName}>{m.displayName}</Text>
                       <Text style={styles.memberSub}>
-                        Paid {formatINR(bal ? bal.totalPaid : 0)} • Share {formatINR(bal ? bal.totalOwed : 0)}
+                        Paid {formatINR(bal ? (bal.expensePaid ?? bal.totalPaid) : 0)} • Share {formatINR(bal ? (bal.expenseShare ?? bal.totalOwed) : 0)}
                       </Text>
                     </View>
                     <View style={styles.memberNetCol}>
