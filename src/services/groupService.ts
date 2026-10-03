@@ -1,6 +1,7 @@
 import { firestore } from './firebase';
 import { Group, GroupMember } from '../types/group';
 import { UserProfile } from '../types/auth';
+import { notificationService } from './notificationService';
 
 /**
  * Generates an uppercase 6-character random alphanumeric invite code (e.g. GOA7K2)
@@ -40,6 +41,7 @@ export const groupService = {
       createdAt: now,
       updatedAt: now,
       memberCount: 1,
+      memberIds: [user.uid],
     };
 
     const batch = firestore().batch();
@@ -112,6 +114,7 @@ export const groupService = {
     batch.set(memberRef, newMember);
     batch.update(groupDoc.ref, {
       memberCount: firestore.FieldValue.increment(1),
+      memberIds: firestore.FieldValue.arrayUnion(user.uid),
       updatedAt: now,
     });
 
@@ -122,34 +125,68 @@ export const groupService = {
     }
 
     await batch.commit();
-    return group;
+
+    // Send member joined notification to other group members
+    try {
+      const targetUserIds = (group.memberIds || []).filter((id) => id !== user.uid);
+      if (targetUserIds.length > 0) {
+        await notificationService.sendMemberJoinedNotification({
+          groupId,
+          groupName: group.name,
+          memberId: user.uid,
+          memberName: user.displayName || 'A new member',
+          targetUserIds,
+        });
+      }
+    } catch (notifErr) {
+      console.warn('Member joined notification note:', notifErr);
+    }
+
+    return {
+      ...group,
+      memberCount: (group.memberCount || 1) + 1,
+      memberIds: [...(group.memberIds || []), user.uid],
+    };
   },
 
   /**
    * Fetch all groups the current user is a member of
    */
   async getUserGroups(userId: string): Promise<Group[]> {
-    // Query groups where members subcollection contains the user
-    // Free & safe: fetch user member documents using collectionGroup
-    const memberSnap = await firestore()
-      .collectionGroup('members')
-      .where('uid', '==', userId)
-      .get();
+    try {
+      const groupMap = new Map<string, Group>();
 
-    if (memberSnap.empty) {
+      // 1. Fetch groups where user is in memberIds array
+      try {
+        const snap = await firestore()
+          .collection('groups')
+          .where('memberIds', 'array-contains', userId)
+          .get();
+        snap.docs.forEach((doc) => {
+          groupMap.set(doc.id, doc.data() as Group);
+        });
+      } catch (e) {
+        console.warn('Query by memberIds failed:', e);
+      }
+
+      // 2. Fetch groups created by user (handles legacy groups without memberIds)
+      try {
+        const createdSnap = await firestore()
+          .collection('groups')
+          .where('createdBy', '==', userId)
+          .get();
+        createdSnap.docs.forEach((doc) => {
+          groupMap.set(doc.id, doc.data() as Group);
+        });
+      } catch (e) {
+        console.warn('Query by createdBy failed:', e);
+      }
+
+      return Array.from(groupMap.values());
+    } catch (err) {
+      console.warn('Error fetching user groups:', err);
       return [];
     }
-
-    const groupPromises = memberSnap.docs.map(async (doc) => {
-      const groupRef = doc.ref.parent.parent;
-      if (!groupRef) return null;
-      const gDoc = await groupRef.get();
-      if (!gDoc.exists) return null;
-      return gDoc.data() as Group;
-    });
-
-    const groups = await Promise.all(groupPromises);
-    return groups.filter((g): g is Group => g !== null);
   },
 
   /**

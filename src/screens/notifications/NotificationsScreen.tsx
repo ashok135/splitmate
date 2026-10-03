@@ -6,6 +6,7 @@ import {
   StyleSheet,
   SafeAreaView,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,23 +24,37 @@ export const NotificationsScreen = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const fetchNotifs = async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      const list = await notificationService.getNotifications(user.uid);
-      setNotifications(list);
-    } catch (err: any) {
-      console.warn('Failed to load notifications:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchNotifs();
-  }, [user]);
+    if (!user?.uid) return;
+
+    setLoading(true);
+    const unsubscribe = notificationService.subscribeToUserNotificationsList(
+      user.uid,
+      (list) => {
+        setNotifications(list);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid]);
+
+  const onRefresh = async () => {
+    if (!user?.uid) return;
+    try {
+      setRefreshing(true);
+      const list = await notificationService.getNotifications(user.uid);
+      setNotifications(list);
+    } catch (e) {
+      console.warn('Failed to refresh notifications:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleNotificationPress = async (item: AppNotification) => {
     if (user) {
@@ -67,11 +82,16 @@ export const NotificationsScreen = () => {
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchNotifs} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {notifications.length === 0 ? (
+        {loading && notifications.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0F172A" />
+            <Text style={styles.loadingText}>Loading activity...</Text>
+          </View>
+        ) : notifications.length === 0 ? (
           <EmptyState
-            icon="🔔"
+            iconName="bell"
             title="All Caught Up!"
             description="You have no new notifications. Activity from other group members will show up here."
           />
@@ -93,6 +113,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
   },
   header: {
     paddingHorizontal: 20,

@@ -12,6 +12,7 @@ export interface AppNotification {
   actorId: string;
   actorName: string;
   amount?: number;
+  targetUserIds?: string[];
   createdAt: number;
   readBy?: Record<string, boolean>;
 }

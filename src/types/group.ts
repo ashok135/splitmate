@@ -16,4 +16,5 @@ export interface Group {
   createdAt: number;
   updatedAt: number;
   memberCount?: number;
+  memberIds?: string[];
 }

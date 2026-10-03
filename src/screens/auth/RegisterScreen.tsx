@@ -11,9 +11,6 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { authService } from '../../services/authService';
@@ -21,41 +18,54 @@ import { Button } from '../../components/Button';
 
 type RegisterNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
-const registerSchema = z
-  .object({
-    displayName: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
-
 export const RegisterScreen = ({ navigation }: { navigation: RegisterNavigationProp }) => {
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    displayName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      displayName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
-  });
+  const validate = (): boolean => {
+    const newErrors: {
+      displayName?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
 
-  const onSubmit = async (data: RegisterFormData) => {
+    if (!displayName.trim() || displayName.trim().length < 2) {
+      newErrors.displayName = 'Name must be at least 2 characters';
+    }
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password || password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords don't match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const onSubmit = async () => {
+    if (!validate()) return;
+
     try {
       setLoading(true);
-      await authService.register(data.email, data.password, data.displayName);
+      await authService.register(email.trim(), password, displayName.trim());
     } catch (err: any) {
       Alert.alert('Registration Failed', err.message || 'Could not create account');
     } finally {
@@ -82,7 +92,7 @@ export const RegisterScreen = ({ navigation }: { navigation: RegisterNavigationP
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.logoText}>💰 SplitMate</Text>
+            <Text style={styles.logoText}>SplitMate</Text>
             <Text style={styles.tagline}>Create your free account</Text>
           </View>
 
@@ -93,94 +103,78 @@ export const RegisterScreen = ({ navigation }: { navigation: RegisterNavigationP
             {/* Display Name */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Full Name</Text>
-              <Controller
-                control={control}
-                name="displayName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.displayName && styles.inputError]}
-                    placeholder="Ashok Kumar"
-                    placeholderTextColor="#94A3B8"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                  />
-                )}
+              <TextInput
+                style={[styles.input, errors.displayName && styles.inputError]}
+                placeholder="Ashok Kumar"
+                placeholderTextColor="#94A3B8"
+                onChangeText={(text) => {
+                  setDisplayName(text);
+                  if (errors.displayName) setErrors((prev) => ({ ...prev, displayName: undefined }));
+                }}
+                value={displayName}
               />
-              {errors.displayName && (
-                <Text style={styles.errorText}>{errors.displayName.message}</Text>
-              )}
+              {errors.displayName ? (
+                <Text style={styles.errorText}>{errors.displayName}</Text>
+              ) : null}
             </View>
 
             {/* Email Address */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address</Text>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.email && styles.inputError]}
-                    placeholder="you@example.com"
-                    placeholderTextColor="#94A3B8"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                  />
-                )}
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="you@example.com"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                value={email}
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
             </View>
 
             {/* Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.password && styles.inputError]}
-                    placeholder="At least 6 characters"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                  />
-                )}
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="At least 6 characters"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                value={password}
               />
-              {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
             </View>
 
             {/* Confirm Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirm Password</Text>
-              <Controller
-                control={control}
-                name="confirmPassword"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.confirmPassword && styles.inputError]}
-                    placeholder="Re-enter password"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                  />
-                )}
+              <TextInput
+                style={[styles.input, errors.confirmPassword && styles.inputError]}
+                placeholder="Re-enter password"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                onChangeText={(text) => {
+                  setConfirmPassword(text);
+                  if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                }}
+                value={confirmPassword}
               />
-              {errors.confirmPassword && (
-                <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
-              )}
+              {errors.confirmPassword ? (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              ) : null}
             </View>
 
             <Button
               title="Create Account"
-              onPress={handleSubmit(onSubmit)}
+              onPress={onSubmit}
               loading={loading}
               style={styles.submitBtn}
             />
@@ -202,7 +196,7 @@ export const RegisterScreen = ({ navigation }: { navigation: RegisterNavigationP
             <View style={styles.footerRow}>
               <Text style={styles.footerText}>Already have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.loginLink}>Sign In</Text>
+                <Text style={styles.signInLink}>Sign In</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -227,13 +221,13 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 32,
   },
   logoText: {
     fontSize: 32,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   tagline: {
     fontSize: 15,
@@ -258,10 +252,10 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#64748B',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
     fontSize: 13,
@@ -321,7 +315,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 14,
   },
-  loginLink: {
+  signInLink: {
     color: '#0F172A',
     fontWeight: '700',
     fontSize: 14,

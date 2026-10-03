@@ -14,21 +14,51 @@ export const useAuth = () => {
     const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          const profile = await authService.getUserProfile(firebaseUser.uid);
-          if (profile) {
-            dispatch(setUser(profile));
-            // Register FCM device token
+          let profile = await authService.getUserProfile(firebaseUser.uid);
+          if (!profile) {
+            const now = Date.now();
+            profile = {
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL || null,
+              defaultGroupId: null,
+              createdAt: now,
+              updatedAt: now,
+            };
+            try {
+              await authService.updateProfile(firebaseUser.uid, profile);
+            } catch {}
+          }
+          dispatch(setUser(profile));
+
+          // Non-critical background registrations
+          try {
             await notificationService.registerDeviceToken(profile.uid);
-            // Sync default group to native SMS detection
+          } catch (notifErr) {
+            console.warn('Notification registration skipped:', notifErr);
+          }
+
+          try {
             if (profile.defaultGroupId) {
               smsService.setDefaultGroup(profile.defaultGroupId);
             }
-          } else {
-            dispatch(setUser(null));
+          } catch (smsErr) {
+            console.warn('SMS default group sync skipped:', smsErr);
           }
         } catch (e) {
           console.warn('Failed to load user profile on auth change:', e);
-          dispatch(setUser(null));
+          dispatch(
+            setUser({
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL || null,
+              defaultGroupId: null,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            })
+          );
         }
       } else {
         dispatch(logoutSuccess());

@@ -1,4 +1,4 @@
-import { firestore } from './firebase';
+import { firestore, cleanForFirestore } from './firebase';
 import { Settlement } from '../types/expense';
 
 export const settlementService = {
@@ -21,7 +21,7 @@ export const settlementService = {
     const settlementId = settlementRef.id;
     const now = Date.now();
 
-    const settlement: Settlement = {
+    const settlement: Settlement = cleanForFirestore({
       settlementId,
       groupId,
       fromUserId,
@@ -29,7 +29,7 @@ export const settlementService = {
       amount,
       createdAt: now,
       notes: notes?.trim(),
-    };
+    });
 
     await settlementRef.set(settlement);
     return settlement;

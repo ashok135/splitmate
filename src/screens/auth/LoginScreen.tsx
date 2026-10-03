@@ -11,9 +11,6 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { authService } from '../../services/authService';
@@ -21,32 +18,35 @@ import { Button } from '../../components/Button';
 
 type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
-
 export const LoginScreen = ({ navigation }: { navigation: LoginNavigationProp }) => {
+  console.warn('LOGIN_SCREEN RENDER');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
+  const validate = (): boolean => {
+    const newErrors: { email?: string; password?: string } = {};
 
-  const onSubmit = async (data: LoginFormData) => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password || password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const onSubmit = async () => {
+    if (!validate()) return;
+
     try {
       setLoading(true);
-      await authService.login(data.email, data.password);
+      await authService.login(email.trim(), password);
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Invalid email or password');
     } finally {
@@ -73,7 +73,7 @@ export const LoginScreen = ({ navigation }: { navigation: LoginNavigationProp })
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.logoText}>💰 SplitMate</Text>
+            <Text style={styles.logoText}>SplitMate</Text>
             <Text style={styles.tagline}>Simple, fair group expense sharing</Text>
           </View>
 
@@ -84,23 +84,19 @@ export const LoginScreen = ({ navigation }: { navigation: LoginNavigationProp })
             {/* Email Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address</Text>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.email && styles.inputError]}
-                    placeholder="you@example.com"
-                    placeholderTextColor="#94A3B8"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                  />
-                )}
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="you@example.com"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                value={email}
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
             </View>
 
             {/* Password Field */}
@@ -111,27 +107,23 @@ export const LoginScreen = ({ navigation }: { navigation: LoginNavigationProp })
                   <Text style={styles.forgotLink}>Forgot?</Text>
                 </TouchableOpacity>
               </View>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.password && styles.inputError]}
-                    placeholder="••••••••"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                  />
-                )}
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="••••••••"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                value={password}
               />
-              {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+              {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
             </View>
 
             <Button
               title="Sign In"
-              onPress={handleSubmit(onSubmit)}
+              onPress={onSubmit}
               loading={loading}
               style={styles.submitBtn}
             />

@@ -21,6 +21,7 @@ import { GroupCard } from '../../components/GroupCard';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { smsService } from '../../services/smsService';
+import { Icon } from '../../components/Icon';
 import { ParsedTransaction } from '../../types/sms';
 import { calculateEqualSplit } from '../../utils/splitCalculator';
 
@@ -118,14 +119,14 @@ export const HomeScreen = () => {
         {/* Top Header */}
         <View style={styles.topHeader}>
           <View>
-            <Text style={styles.greeting}>Hello, {user?.displayName?.split(' ')[0] || 'there'} 👋</Text>
+            <Text style={styles.greeting}>Hello, {user?.displayName?.split(' ')[0] || 'there'}</Text>
             <Text style={styles.subGreeting}>Here's your expense summary</Text>
           </View>
           <TouchableOpacity
             style={styles.settingsIconBtn}
             onPress={() => navigation.navigate('Settings')}
           >
-            <Text style={styles.gearIcon}>⚙️</Text>
+            <Icon name="settings" size={22} color="#64748B" />
           </TouchableOpacity>
         </View>
 
@@ -133,7 +134,7 @@ export const HomeScreen = () => {
         {detectedTx && defaultGroup && (
           <View style={styles.txAlertCard}>
             <View style={styles.txAlertHeader}>
-              <Text style={styles.txAlertTitle}>💰 Transaction detected</Text>
+              <Text style={styles.txAlertTitle}>Transaction detected</Text>
               <TouchableOpacity onPress={() => setDetectedTx(null)}>
                 <Text style={styles.closeAlert}>✕</Text>
               </TouchableOpacity>
@@ -222,7 +223,7 @@ export const HomeScreen = () => {
           </View>
         ) : (
           <EmptyState
-            icon="👥"
+            iconName="users"
             title="No Groups Yet"
             description="Create or join a group to start splitting expenses with friends, family, or flatmates."
             actionTitle="Create Group"

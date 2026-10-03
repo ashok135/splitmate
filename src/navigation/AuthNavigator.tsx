@@ -8,6 +8,7 @@ import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AuthNavigator = () => {
+  console.warn('AUTH_NAVIGATOR RENDER');
   return (
     <Stack.Navigator
       screenOptions={{

@@ -32,6 +32,7 @@ export const useExpenses = (groupId?: string) => {
   const debts = useSelector(
     (state: RootState) => (groupId ? state.expenses.debts[groupId] || [] : [])
   );
+  const groups = useSelector((state: RootState) => state.groups.groups);
   const loading = useSelector((state: RootState) => state.expenses.loading);
 
   const refreshGroupData = useCallback(
@@ -112,6 +113,7 @@ export const useExpenses = (groupId?: string) => {
       dispatch(addExpenseSuccess({ groupId: targetGroupId, expense: newExpense }));
 
       // Send group push notification to other members
+      const targetUserIds = members.map((m) => m.uid).filter((id) => id !== user.uid);
       await notificationService.sendGroupExpenseNotification({
         groupId: targetGroupId,
         groupName,
@@ -120,6 +122,7 @@ export const useExpenses = (groupId?: string) => {
         payerName: user.displayName,
         amount,
         description,
+        targetUserIds,
       });
 
       // Update balances
@@ -162,6 +165,30 @@ export const useExpenses = (groupId?: string) => {
       );
 
       dispatch(addSettlementSuccess({ groupId: targetGroupId, settlement }));
+
+      // Send settlement notification to other group members
+      try {
+        const fromMember = members.find((m) => m.uid === fromUserId);
+        const toMember = members.find((m) => m.uid === toUserId);
+        const currentGroup = groups.find((g) => g.groupId === targetGroupId);
+        const groupName = currentGroup?.name || 'Group';
+        const targetUserIds = members.map((m) => m.uid).filter((id) => id !== fromUserId);
+
+        await notificationService.sendSettlementNotification({
+          groupId: targetGroupId,
+          groupName,
+          settlementId: settlement.settlementId,
+          fromUserId,
+          fromUserName: fromMember?.displayName || 'A member',
+          toUserId,
+          toUserName: toMember?.displayName || 'A member',
+          amount,
+          notes,
+          targetUserIds,
+        });
+      } catch (notifErr) {
+        console.warn('Settlement notification note:', notifErr);
+      }
 
       // Recalculate balances
       const updatedSettlements = [settlement, ...settlements];

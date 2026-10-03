@@ -58,11 +58,11 @@ export const GroupsScreen = () => {
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing || loading} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {groups.length === 0 ? (
           <EmptyState
-            icon="👥"
+            iconName="users"
             title="No Groups Found"
             description="Create your first group or enter an invite code to join an existing group."
             actionTitle="Create Group"

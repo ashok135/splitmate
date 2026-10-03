@@ -1,4 +1,4 @@
-import { firestore } from './firebase';
+import { firestore, cleanForFirestore } from './firebase';
 import { Expense, ExpenseSplit } from '../types/expense';
 import { UserProfile } from '../types/auth';
 import { ProcessedTransactionDoc } from '../types/sms';
@@ -32,14 +32,14 @@ export const expenseService = {
     const expenseId = expenseRef.id;
     const now = Date.now();
 
-    const fullExpense: Expense = {
+    const fullExpense: Expense = cleanForFirestore({
       ...expenseData,
       expenseId,
       groupId,
       createdAt: now,
       updatedAt: now,
       splits, // Embedded for single-document read efficiency
-    };
+    });
 
     const batch = firestore().batch();
 
@@ -49,13 +49,13 @@ export const expenseService = {
     // 2. Write each split into groups/{groupId}/expenses/{expenseId}/splits/{uid}
     Object.values(splits).forEach((split) => {
       const splitRef = expenseRef.collection('splits').doc(split.userId);
-      batch.set(splitRef, split);
+      batch.set(splitRef, cleanForFirestore(split));
     });
 
     // 3. If there is a bank SMS fingerprint, record in processedTransactions/{fingerprint}
     if (fingerprint) {
       const procRef = firestore().collection('processedTransactions').doc(fingerprint);
-      const procData: ProcessedTransactionDoc = {
+      const procData: ProcessedTransactionDoc = cleanForFirestore({
         fingerprint,
         userId: user.uid,
         amount: expenseData.amount,
@@ -63,7 +63,7 @@ export const expenseService = {
         createdExpenseId: expenseId,
         groupId,
         merchant: expenseData.merchant,
-      };
+      });
       batch.set(procRef, procData);
     }
 
@@ -91,14 +91,11 @@ export const expenseService = {
       .doc(expenseId);
 
     const now = Date.now();
-    const updateData: any = {
+    const updateData: any = cleanForFirestore({
       ...expenseData,
       updatedAt: now,
-    };
-
-    if (splits) {
-      updateData.splits = splits;
-    }
+      ...(splits ? { splits: cleanForFirestore(splits) } : {}),
+    });
 
     const batch = firestore().batch();
     batch.update(expenseRef, updateData);
@@ -106,7 +103,7 @@ export const expenseService = {
     if (splits) {
       Object.values(splits).forEach((split) => {
         const splitRef = expenseRef.collection('splits').doc(split.userId);
-        batch.set(splitRef, split);
+        batch.set(splitRef, cleanForFirestore(split));
       });
     }
 

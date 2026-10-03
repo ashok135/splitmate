@@ -12,7 +12,20 @@
           "package_name": "com.splitmate"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "329382178902-ppelsi9j5u8p4a72jvmrf8r8b33r12eh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.splitmate",
+            "certificate_hash": "0e8f74f0c768de1b3ac68af6bb8ed618eef182ea"
+          }
+        },
+        {
+          "client_id": "329382178902-o5c2kehq18d5kpfikpm6era0o1skir36.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAMDdGD8wfgEpgqVpW0agfGkScNJepVB5Y"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "329382178902-o5c2kehq18d5kpfikpm6era0o1skir36.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "329382178902-5mddngqkrcc5t54nhk5n5rmh339ru27j.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.splitmate"
+              }
+            }
+          ]
         }
       }
     }

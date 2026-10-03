@@ -60,7 +60,7 @@ export const GroupDetailsScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing || loading} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Top Header Card */}
         <View style={styles.headerCard}>
