@@ -18,6 +18,7 @@ import { expenseService } from '../../services/expenseService';
 import { Expense } from '../../types/expense';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { formatINR } from '../../utils/currency';
 import { format } from 'date-fns';
 
@@ -104,10 +105,12 @@ export const ExpenseDetailsScreen = () => {
           <View style={styles.sourceRow}>
             {expense.source === 'bank_sms' ? (
               <View style={styles.smsPill}>
-                <Text style={styles.smsPillText}>📱 AUTOMATICALLY DETECTED VIA BANK SMS</Text>
+                <Icon name="smartphone" size={12} color="#92400E" style={{ marginRight: 5 }} />
+                <Text style={styles.smsPillText}>AUTOMATICALLY DETECTED VIA BANK SMS</Text>
               </View>
             ) : (
               <View style={styles.manualPill}>
+                <Icon name="edit-3" size={12} color="#64748B" style={{ marginRight: 5 }} />
                 <Text style={styles.manualPillText}>MANUAL ENTRY</Text>
               </View>
             )}
@@ -219,9 +222,11 @@ const styles = StyleSheet.create({
   smsPill: {
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 6,
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   smsPillText: {
     color: '#92400E',
@@ -231,9 +236,11 @@ const styles = StyleSheet.create({
   manualPill: {
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 6,
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   manualPillText: {
     color: '#64748B',

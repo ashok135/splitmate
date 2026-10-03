@@ -12,11 +12,12 @@ interface HistoryItem {
   subtitle: string;
   dateStr: string;
   timestamp: number;
-  amount: number;
+  totalAmount: number;
   paidByUid: string;
   paidByName: string;
   isCurrentUserPayer: boolean;
   userShare: number;
+  lentAmount: number;
   iconName: string;
   iconColor: string;
   iconBg: string;
@@ -128,19 +129,21 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
 
       const userSplit = currentUserId && e.splits ? e.splits[currentUserId] : null;
       const userShare = userSplit ? userSplit.amountOwed : e.amount / Math.max(members.length, 1);
+      const lentAmount = isCurrentUserPayer ? Math.max(e.amount - userShare, 0) : 0;
 
       items.push({
         id: e.expenseId,
         type: 'expense',
         title: e.description || e.merchant || 'Expense',
-        subtitle: `${formatGPayDate(e.createdAt)} • Paid by ${payerName}`,
+        subtitle: `${isCurrentUserPayer ? 'You' : payerName} paid ${formatINR(e.amount)}`,
         dateStr: formatGPayDate(e.createdAt),
         timestamp: e.createdAt,
-        amount: e.amount,
+        totalAmount: e.amount,
         paidByUid: e.paidBy,
         paidByName: payerName,
         isCurrentUserPayer,
         userShare,
+        lentAmount,
         iconName,
         iconColor: color,
         iconBg: bg,
@@ -159,14 +162,15 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
         id: s.settlementId,
         type: 'settlement',
         title: `Settlement: ${fromName} → ${toName}`,
-        subtitle: `${formatGPayDate(s.createdAt)} • ${s.notes || 'Payment Settle Up'}`,
+        subtitle: `${fromName} paid ${toName}`,
         dateStr: formatGPayDate(s.createdAt),
         timestamp: s.createdAt,
-        amount: s.amount,
+        totalAmount: s.amount,
         paidByUid: s.fromUserId,
         paidByName: fromName,
         isCurrentUserPayer,
         userShare: isCurrentUserRecipient ? s.amount : 0,
+        lentAmount: 0,
         iconName: 'check-circle',
         iconColor: '#0D9488',
         iconBg: '#F0FDF4',
@@ -207,7 +211,7 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
         const items = groupedByMonth[monthKey];
         const monthlyTotal = items
           .filter((i) => i.type === 'expense')
-          .reduce((sum, i) => sum + i.amount, 0);
+          .reduce((sum, i) => sum + i.totalAmount, 0);
 
         return (
           <View key={monthKey} style={styles.monthSection}>
@@ -217,7 +221,7 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
                 <Text style={styles.monthBadgeText}>{monthKey.toUpperCase()}</Text>
               </View>
               <Text style={styles.monthTotalText}>
-                Total: <Text style={styles.boldText}>{formatINR(monthlyTotal)}</Text>
+                Month Total: <Text style={styles.boldText}>{formatINR(monthlyTotal)}</Text>
               </Text>
             </View>
 
@@ -237,32 +241,71 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
                       <Icon name={item.iconName} size={20} color={item.iconColor} />
                     </View>
 
-                    {/* Transaction Details */}
+                    {/* Transaction Left Details */}
                     <View style={styles.detailsCol}>
                       <Text style={styles.txTitle} numberOfLines={1}>
                         {item.title}
                       </Text>
-                      <Text style={styles.txSubtitle} numberOfLines={1}>
-                        {item.subtitle}
+
+                      {/* Who Paid */}
+                      <Text style={styles.txPayerText} numberOfLines={1}>
+                        {item.type === 'settlement'
+                          ? item.subtitle
+                          : `Paid by ${item.isCurrentUserPayer ? 'You' : item.paidByName}`}
+                      </Text>
+
+                      {/* Date & Time */}
+                      <Text style={styles.txDateText}>
+                        {item.dateStr}
                       </Text>
                     </View>
 
-                    {/* Amount & Status */}
+                    {/* Right Side: Total Amount + Your Calculated Share */}
                     <View style={styles.amountCol}>
                       {item.type === 'settlement' ? (
                         <>
-                          <Text style={styles.settleAmount}>{formatINR(item.amount)}</Text>
-                          <Text style={styles.settleLabel}>SETTLED</Text>
+                          <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
+                          <View style={styles.settleBadge}>
+                            <Text style={styles.settleBadgeText}>SETTLED</Text>
+                          </View>
                         </>
                       ) : item.isCurrentUserPayer ? (
                         <>
-                          <Text style={styles.greenAmount}>+{formatINR(item.amount)}</Text>
-                          <Text style={styles.payerLabel}>You paid</Text>
+                          {/* Total Bill */}
+                          <Text style={styles.billTotalLabel}>
+                            Total: <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
+                          </Text>
+
+                          {/* Your Share Badge */}
+                          <View style={styles.shareBadgeGreen}>
+                            <Text style={styles.shareBadgeTextGreen}>
+                              Your share: {formatINR(item.userShare)}
+                            </Text>
+                          </View>
+
+                          {/* Net Lent to Others */}
+                          <Text style={styles.lentText}>
+                            +{formatINR(item.lentAmount)} to receive
+                          </Text>
                         </>
                       ) : (
                         <>
-                          <Text style={styles.redAmount}>-{formatINR(item.userShare)}</Text>
-                          <Text style={styles.shareLabel}>Your share</Text>
+                          {/* Total Bill Paid by Flatmate */}
+                          <Text style={styles.billTotalLabel}>
+                            Total: <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
+                          </Text>
+
+                          {/* Your Calculated Share Badge */}
+                          <View style={styles.shareBadgeRed}>
+                            <Text style={styles.shareBadgeTextRed}>
+                              Your share: {formatINR(item.userShare)}
+                            </Text>
+                          </View>
+
+                          {/* Net You Owe */}
+                          <Text style={styles.youOweText}>
+                            -{formatINR(item.userShare)} you owe
+                          </Text>
                         </>
                       )}
                     </View>
@@ -308,7 +351,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   boldText: {
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
   },
   monthCard: {
@@ -327,7 +370,7 @@ const styles = StyleSheet.create({
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 13,
   },
   txBorder: {
     borderBottomWidth: 1,
@@ -349,51 +392,77 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 3,
+    marginBottom: 2,
   },
-  txSubtitle: {
+  txPayerText: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#334155',
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  txDateText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   amountCol: {
     alignItems: 'flex-end',
   },
-  greenAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#16A34A',
-  },
-  payerLabel: {
-    fontSize: 11,
-    color: '#16A34A',
+  billTotalLabel: {
+    fontSize: 12,
+    color: '#64748B',
     fontWeight: '600',
-    marginTop: 2,
+    marginBottom: 3,
   },
-  redAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#DC2626',
+  billTotalNumber: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0F172A',
   },
-  shareLabel: {
+  shareBadgeGreen: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 2,
+  },
+  shareBadgeTextGreen: {
     fontSize: 11,
-    color: '#DC2626',
-    fontWeight: '600',
-    marginTop: 2,
+    fontWeight: '800',
+    color: '#15803D',
   },
-  settleAmount: {
-    fontSize: 15,
+  lentText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: '#16A34A',
   },
-  settleLabel: {
+  shareBadgeRed: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 2,
+  },
+  shareBadgeTextRed: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  youOweText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  settleBadge: {
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  settleBadgeText: {
     fontSize: 10,
     fontWeight: '800',
     color: '#0D9488',
-    backgroundColor: '#CCFBF1',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    marginTop: 2,
   },
   emptyWrap: {
     backgroundColor: '#FFFFFF',
