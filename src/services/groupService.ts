@@ -259,10 +259,76 @@ export const groupService = {
   },
 
   /**
+   * Leave a group (For non-owner members, or owners if they are the only member)
+   */
+  async leaveGroup(groupId: string, user: UserProfile): Promise<void> {
+    const groupRef = firestore().collection('groups').doc(groupId);
+    const groupDoc = await groupRef.get();
+    if (!groupDoc.exists) return;
+
+    const groupData = groupDoc.data() as Group;
+    const currentMemberIds = Array.isArray(groupData.memberIds) ? groupData.memberIds : [];
+    const isOwner = groupData.createdBy === user.uid;
+
+    // If owner is the only member left in the group, delete the group entirely
+    if (isOwner && currentMemberIds.length <= 1) {
+      await this.deleteGroup(groupId);
+      return;
+    }
+
+    const updatedMemberIds = currentMemberIds.filter((id) => id !== user.uid);
+    const updatedCount = Math.max(0, updatedMemberIds.length);
+
+    const batch = firestore().batch();
+    const memberRef = groupRef.collection('members').doc(user.uid);
+    batch.delete(memberRef);
+
+    const updatePayload: Record<string, any> = {
+      memberCount: updatedCount,
+      memberIds: updatedMemberIds,
+      updatedAt: Date.now(),
+    };
+
+    // If owner leaves and other members exist, transfer ownership to the next member
+    if (isOwner && updatedMemberIds.length > 0) {
+      updatePayload.createdBy = updatedMemberIds[0];
+      const nextOwnerRef = groupRef.collection('members').doc(updatedMemberIds[0]);
+      batch.update(nextOwnerRef, { role: 'owner' });
+    }
+
+    batch.update(groupRef, updatePayload);
+
+    // If this was user's default group, reset it
+    if (user.defaultGroupId === groupId) {
+      const userRef = firestore().collection('users').doc(user.uid);
+      batch.update(userRef, { defaultGroupId: null, updatedAt: Date.now() });
+    }
+
+    await batch.commit();
+  },
+
+  /**
    * Delete group (Owner only)
    */
   async deleteGroup(groupId: string): Promise<void> {
-    await firestore().collection('groups').doc(groupId).delete();
+    const groupRef = firestore().collection('groups').doc(groupId);
+    try {
+      const expSnap = await groupRef.collection('expenses').get();
+      for (const doc of expSnap.docs) {
+        await doc.ref.delete();
+      }
+      const setSnap = await groupRef.collection('settlements').get();
+      for (const doc of setSnap.docs) {
+        await doc.ref.delete();
+      }
+      const memSnap = await groupRef.collection('members').get();
+      for (const doc of memSnap.docs) {
+        await doc.ref.delete();
+      }
+    } catch (e) {
+      console.warn('Subcollection cleanup note:', e);
+    }
+    await groupRef.delete();
   },
 
   /**

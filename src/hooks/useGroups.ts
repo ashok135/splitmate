@@ -82,6 +82,19 @@ export const useGroups = () => {
     }
   };
 
+  const leaveGroup = async (groupId: string): Promise<void> => {
+    if (!user) throw new Error('You must be logged in to leave a group');
+    try {
+      dispatch(setGroupLoading(true));
+      await groupService.leaveGroup(groupId, user);
+      const updated = groups.filter((g) => g.groupId !== groupId);
+      dispatch(setGroups(updated));
+    } catch (err: any) {
+      dispatch(setGroupError(err.message));
+      throw err;
+    }
+  };
+
   const selectGroup = (group: Group | null) => {
     dispatch(setActiveGroup(group));
   };
@@ -98,5 +111,6 @@ export const useGroups = () => {
     fetchMembers,
     selectGroup,
     deleteGroup,
+    leaveGroup,
   };
 };

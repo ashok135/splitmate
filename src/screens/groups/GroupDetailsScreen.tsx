@@ -84,7 +84,7 @@ export const GroupDetailsScreen = () => {
   const { groupId } = route.params;
 
   const { user, updateDefaultGroup } = useAuth();
-  const { groups, fetchMembers, members, deleteGroup } = useGroups();
+  const { groups, fetchMembers, members, deleteGroup, leaveGroup } = useGroups();
   const group = groups.find((g) => g.groupId === groupId);
   const groupMembers = members[groupId] || [];
 
@@ -130,8 +130,12 @@ export const GroupDetailsScreen = () => {
   };
 
   const isDefault = user?.defaultGroupId === groupId;
-  // If createdBy matches user.uid or is not explicitly set, allow creator actions
-  const isOwner = !group?.createdBy || group?.createdBy === user?.uid;
+  const currentUserMember = groupMembers.find((m) => m.uid === user?.uid);
+  const isOwner = Boolean(
+    (group?.createdBy && user?.uid && group.createdBy === user.uid) ||
+    currentUserMember?.role === 'owner'
+  );
+  const isAdmin = isOwner || currentUserMember?.role === 'admin';
   const userBalance = user?.uid && currentMonthBalances[user.uid] ? currentMonthBalances[user.uid].netBalance : 0;
 
   const totalGroupExpenses = useMemo(() => {
@@ -156,6 +160,33 @@ export const GroupDetailsScreen = () => {
               navigation.reset({ index: 0, routes: [{ name: 'MainTabs' as any }] });
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to delete group');
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLeaveGroup = () => {
+    setMenuVisible(false);
+    Alert.alert(
+      'Leave Group',
+      `Are you sure you want to leave "${group?.name}"? You will no longer share expenses with this group.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave Group',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await leaveGroup(groupId);
+              Alert.alert('Left Group', `You have left "${group?.name || 'Group'}".`);
+              navigation.reset({ index: 0, routes: [{ name: 'MainTabs' as any }] });
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to leave group');
             } finally {
               setDeleting(false);
             }
@@ -194,9 +225,9 @@ export const GroupDetailsScreen = () => {
                 {group?.name || 'Group Details'}
               </Text>
               <View style={styles.ownerBadgeRow}>
-                {isOwner && <Icon name="shield" size={13} color="#0284C7" />}
+                <Icon name={isOwner ? "shield" : "user"} size={13} color={isOwner ? "#0284C7" : "#64748B"} />
                 <Text style={styles.groupCreatedText}>
-                  {isOwner ? ' You are the Group Creator' : 'Group Member'}
+                  {isOwner ? ' You are the Group Creator' : isAdmin ? ' Group Admin' : ' Group Member'}
                 </Text>
               </View>
             </View>
@@ -445,20 +476,41 @@ export const GroupDetailsScreen = () => {
               </View>
             </TouchableOpacity>
 
-            {/* Delete Group Button */}
-            <TouchableOpacity
-              style={[styles.menuItem, styles.deleteMenuItem]}
-              onPress={handleDeleteGroup}
-              disabled={deleting}
-            >
-              <View style={styles.menuIconWrap}>
-                <Icon name="trash-2" size={20} color="#DC2626" />
-              </View>
-              <View style={styles.menuItemTextCol}>
-                <Text style={styles.deleteMenuTitle}>Delete Group</Text>
-                <Text style={styles.deleteMenuSub}>Permanently delete all expenses & data</Text>
-              </View>
-            </TouchableOpacity>
+            {/* Delete Group Button (Owners only) */}
+            {isOwner && (
+              <TouchableOpacity
+                style={[styles.menuItem, styles.deleteMenuItem]}
+                onPress={handleDeleteGroup}
+                disabled={deleting}
+              >
+                <View style={styles.menuIconWrap}>
+                  <Icon name="trash-2" size={20} color="#DC2626" />
+                </View>
+                <View style={styles.menuItemTextCol}>
+                  <Text style={styles.deleteMenuTitle}>Delete Group</Text>
+                  <Text style={styles.deleteMenuSub}>Permanently delete all expenses & data</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Leave Group Button */}
+            {(!isOwner || groupMembers.length > 1) && (
+              <TouchableOpacity
+                style={[styles.menuItem, !isOwner ? styles.deleteMenuItem : null]}
+                onPress={handleLeaveGroup}
+                disabled={deleting}
+              >
+                <View style={styles.menuIconWrap}>
+                  <Icon name="log-out" size={20} color="#DC2626" />
+                </View>
+                <View style={styles.menuItemTextCol}>
+                  <Text style={styles.deleteMenuTitle}>Leave Group</Text>
+                  <Text style={styles.deleteMenuSub}>
+                    {isOwner ? 'Transfer ownership & exit group' : 'Remove yourself from this group'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
 
             {/* Cancel Button */}
             <TouchableOpacity

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,28 +7,38 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useGroups } from '../../hooks/useGroups';
 import { groupService } from '../../services/groupService';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { GroupMember } from '../../types/group';
+import Icon from 'react-native-vector-icons/Feather';
 
 type MembersRouteProp = RouteProp<RootStackParamList, 'Members'>;
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const MembersScreen = () => {
   const route = useRoute<MembersRouteProp>();
+  const navigation = useNavigation<NavProp>();
   const { groupId } = route.params;
 
   const { user } = useAuth();
-  const { groups, fetchMembers, members } = useGroups();
+  const { groups, fetchMembers, members, leaveGroup } = useGroups();
   const group = groups.find((g) => g.groupId === groupId);
   const memberList: GroupMember[] = members[groupId] || [];
+  const [leaving, setLeaving] = useState(false);
 
-  const currentUserRole = memberList.find((m) => m.uid === user?.uid)?.role || 'member';
-  const isOwnerOrAdmin = currentUserRole === 'owner' || currentUserRole === 'admin';
+  const currentUserMember = memberList.find((m) => m.uid === user?.uid);
+  const isOwner = Boolean(
+    (group?.createdBy && user?.uid && group.createdBy === user.uid) ||
+    currentUserMember?.role === 'owner'
+  );
+  const isOwnerOrAdmin = isOwner || currentUserMember?.role === 'admin';
 
   useEffect(() => {
     fetchMembers(groupId);
@@ -36,7 +46,7 @@ export const MembersScreen = () => {
 
   const handleRemoveMember = (targetMember: GroupMember) => {
     if (targetMember.uid === user?.uid) {
-      Alert.alert('Cannot Remove', 'You cannot remove yourself from this screen.');
+      Alert.alert('Cannot Remove', 'Use the "Leave Group" button below to exit this group.');
       return;
     }
 
@@ -54,6 +64,32 @@ export const MembersScreen = () => {
               await fetchMembers(groupId);
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Could not remove member');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLeaveGroup = () => {
+    Alert.alert(
+      'Leave Group',
+      `Are you sure you want to leave "${group?.name || 'this group'}"? You will no longer share expenses with this group.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave Group',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLeaving(true);
+              await leaveGroup(groupId);
+              Alert.alert('Left Group', `You have left "${group?.name || 'this group'}".`);
+              navigation.reset({ index: 0, routes: [{ name: 'MainTabs' as any }] });
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Could not leave group');
+            } finally {
+              setLeaving(false);
             }
           },
         },
@@ -122,6 +158,25 @@ export const MembersScreen = () => {
             );
           })}
         </View>
+
+        {/* Leave Group Action Button */}
+        {(!isOwner || memberList.length > 1) && (
+          <TouchableOpacity
+            style={styles.leaveGroupBtn}
+            onPress={handleLeaveGroup}
+            disabled={leaving}
+            activeOpacity={0.8}
+          >
+            {leaving ? (
+              <ActivityIndicator size="small" color="#DC2626" />
+            ) : (
+              <>
+                <Icon name="log-out" size={18} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text style={styles.leaveGroupText}>Leave Group</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -234,6 +289,23 @@ const styles = StyleSheet.create({
   removeText: {
     color: '#EF4444',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  leaveGroupBtn: {
+    marginTop: 24,
+    marginBottom: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  leaveGroupText: {
+    color: '#DC2626',
+    fontSize: 15,
     fontWeight: '700',
   },
 });
