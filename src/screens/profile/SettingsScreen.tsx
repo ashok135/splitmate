@@ -17,6 +17,7 @@ import { smsService } from '../../services/smsService';
 import { parseBankTransactionSms } from '../../utils/transactionFingerprint';
 import { Button } from '../../components/Button';
 import { Icon } from '../../components/Icon';
+import { updateService, CURRENT_VERSION_NAME } from '../../services/updateService';
 import { ParsedTransaction } from '../../types/sms';
 
 export const SettingsScreen = () => {
@@ -28,6 +29,36 @@ export const SettingsScreen = () => {
     'Rs.500 debited from A/C XX1234 at XYZ Store on 03-10-26.'
   );
   const [parsedPreview, setParsedPreview] = useState<ParsedTransaction | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  const handleCheckUpdate = async () => {
+    try {
+      setCheckingUpdate(true);
+      const info = await updateService.checkForUpdate();
+      if (info) {
+        Alert.alert(
+          'Update Available',
+          `SplitMate v${info.versionName} is available!\n\n${info.releaseNotes || 'Bug fixes and performance improvements.'}`,
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Update Now',
+              onPress: () => updateService.downloadAndInstallUpdate(info.downloadUrl),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Up to Date',
+          `You are using the latest version of SplitMate (v${CURRENT_VERSION_NAME}).`
+        );
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not check for updates');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -183,6 +214,23 @@ export const SettingsScreen = () => {
               )}
             </View>
           )}
+        </View>
+
+        {/* App Version & Updates */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>App Version & Updates</Text>
+          <Text style={styles.cardSubtitle}>
+            Current Installed Version: v{CURRENT_VERSION_NAME}
+          </Text>
+
+          <Button
+            title={checkingUpdate ? 'Checking for Updates...' : 'Check for Updates'}
+            variant="outline"
+            size="sm"
+            onPress={handleCheckUpdate}
+            disabled={checkingUpdate}
+            style={{ marginTop: 10 }}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

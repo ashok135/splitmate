@@ -1,0 +1,7 @@
+{
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "downloadUrl": "https://github.com/ashok135/splitmate/raw/main/release/SplitMate.apk",
+  "releaseNotes": "Official production release with group expense splitting, monthly settlements, and offline APK support.",
+  "forceUpdate": false
+}

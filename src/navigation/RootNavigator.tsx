@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
 import { NotificationBanner } from '../components/NotificationBanner';
+import { UpdateModal } from '../components/UpdateModal';
 import { AppNotification } from '../types/notification';
 import { RootStackParamList } from './types';
 
@@ -49,6 +50,7 @@ export const RootNavigator = () => {
       ) : (
         <AuthNavigator />
       )}
+      <UpdateModal />
     </NavigationContainer>
   );
 };
