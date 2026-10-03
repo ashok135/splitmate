@@ -7,6 +7,8 @@ import {
   SafeAreaView,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,6 +18,7 @@ import { notificationService } from '../../services/notificationService';
 import { AppNotification } from '../../types/notification';
 import { NotificationCard } from '../../components/NotificationCard';
 import { EmptyState } from '../../components/EmptyState';
+import Icon from 'react-native-vector-icons/Feather';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,6 +28,7 @@ export const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -73,11 +77,69 @@ export const NotificationsScreen = () => {
     }
   };
 
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      // Optimistic update
+      setNotifications((prev) => prev.filter((n) => n.notificationId !== notificationId));
+      await notificationService.deleteNotification(notificationId);
+    } catch (e) {
+      console.warn('Failed to delete notification:', e);
+      // Restore on failure
+      if (user?.uid) {
+        const list = await notificationService.getNotifications(user.uid);
+        setNotifications(list);
+      }
+    }
+  };
+
+  const handleClearAll = () => {
+    Alert.alert(
+      'Clear All Activity',
+      'Are you sure you want to remove all activity alerts? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user?.uid) return;
+            try {
+              setClearing(true);
+              setNotifications([]);
+              await notificationService.clearAllNotifications(user.uid);
+            } catch (e) {
+              console.warn('Failed to clear notifications:', e);
+            } finally {
+              setClearing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Activity & Alerts</Text>
-        <Text style={styles.subtitle}>Real-time updates on group expenses and settlements</Text>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Activity & Alerts</Text>
+            <Text style={styles.subtitle}>
+              Swipe left on any alert to delete • Real-time updates
+            </Text>
+          </View>
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              onPress={handleClearAll}
+              disabled={clearing}
+              style={styles.clearAllBtn}
+              activeOpacity={0.7}
+            >
+              <Icon name="trash-2" size={13} color="#EF4444" style={{ marginRight: 4 }} />
+              <Text style={styles.clearAllText}>Clear All</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView
@@ -101,6 +163,7 @@ export const NotificationsScreen = () => {
               key={item.notificationId}
               notification={item}
               onPress={() => handleNotificationPress(item)}
+              onDelete={handleDeleteNotification}
             />
           ))
         )}
@@ -130,6 +193,11 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 10,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
     fontSize: 26,
     fontWeight: '800',
@@ -139,6 +207,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
     marginTop: 2,
+  },
+  clearAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  clearAllText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
   },
   scrollContent: {
     paddingHorizontal: 20,

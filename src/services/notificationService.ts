@@ -360,12 +360,54 @@ export const notificationService = {
    * Mark a notification as read
    */
   async markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
-    await firestore()
+    try {
+      await firestore()
+        .collection('notifications')
+        .doc(notificationId)
+        .update({
+          [`readBy.${userId}`]: true,
+        });
+    } catch (e) {
+      console.warn('Mark as read note:', e);
+    }
+  },
+
+  /**
+   * Delete a single notification permanently from Firestore
+   */
+  async deleteNotification(notificationId: string): Promise<void> {
+    await firestore().collection('notifications').doc(notificationId).delete();
+  },
+
+  /**
+   * Clear / delete all notifications for a given user from Firestore
+   */
+  async clearAllNotifications(userId: string): Promise<void> {
+    const snap = await firestore()
       .collection('notifications')
-      .doc(notificationId)
-      .update({
-        [`readBy.${userId}`]: true,
-      });
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get();
+
+    const batch = firestore().batch();
+    let count = 0;
+    snap.docs.forEach((doc) => {
+      const data = doc.data() as AppNotification;
+      const isTarget =
+        data.actorId === userId ||
+        !data.targetUserIds ||
+        data.targetUserIds.length === 0 ||
+        data.targetUserIds.includes(userId);
+
+      if (isTarget) {
+        batch.delete(doc.ref);
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
   },
 
   /**
