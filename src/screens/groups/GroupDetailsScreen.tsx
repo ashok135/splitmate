@@ -74,6 +74,7 @@ const skeletonStyles = StyleSheet.create({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 import { MonthlyHistoryList } from '../../components/MonthlyHistoryList';
+import { MonthlyReportModal } from '../../components/MonthlyReportModal';
 import { Modal, Clipboard } from 'react-native';
 
 export const GroupDetailsScreen = () => {
@@ -90,6 +91,7 @@ export const GroupDetailsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     fetchMembers(groupId).then((mList) => {
@@ -383,6 +385,23 @@ export const GroupDetailsScreen = () => {
               </TouchableOpacity>
             )}
 
+            {/* Monthly Report & Day 1 Reminder */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                setShowReportModal(true);
+              }}
+            >
+              <View style={styles.menuIconWrap}>
+                <Icon name="file-text" size={20} color="#475569" />
+              </View>
+              <View style={styles.menuItemTextCol}>
+                <Text style={styles.menuItemTitle}>Monthly Report & Day-1 Reminders</Text>
+                <Text style={styles.menuItemSub}>Full statement & WhatsApp reminder</Text>
+              </View>
+            </TouchableOpacity>
+
             {/* Delete Group Button */}
             <TouchableOpacity
               style={[styles.menuItem, styles.deleteMenuItem]}
@@ -408,6 +427,21 @@ export const GroupDetailsScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Monthly Report Modal */}
+      {group && (
+        <MonthlyReportModal
+          visible={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          groupName={group.name}
+          groupId={groupId}
+          currentUserId={user?.uid}
+          members={groupMembers}
+          expenses={expenses}
+          settlements={settlements}
+          onMonthClosed={onRefresh}
+        />
+      )}
     </SafeAreaView>
   );
 };

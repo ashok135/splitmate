@@ -19,6 +19,7 @@ import { useExpenses } from '../../hooks/useExpenses';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { MonthlyHistoryList } from '../../components/MonthlyHistoryList';
+import { MonthlyReportModal } from '../../components/MonthlyReportModal';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { smsService } from '../../services/smsService';
 import { dummyDataService } from '../../services/dummyDataService';
@@ -36,6 +37,7 @@ export const HomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [detectedTx, setDetectedTx] = useState<ParsedTransaction | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Find default group
   const defaultGroup = useMemo(() => {
@@ -451,6 +453,18 @@ export const HomeScreen = () => {
               </TouchableOpacity>
             </View>
 
+            {/* Quick Monthly Statement & Day 1 Reminder Button */}
+            <TouchableOpacity
+              style={styles.monthlyReportPillBtn}
+              onPress={() => setShowReportModal(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconTextInline}>
+                <Icon name="file-text" size={14} color="#4F46E5" />
+                <Text style={styles.monthlyReportPillText}> View Monthly Report & Day-1 Reminders →</Text>
+              </View>
+            </TouchableOpacity>
+
             {/* Direct Debts summary */}
             {debts.length > 0 ? (
               <View style={styles.debtsList}>
@@ -595,6 +609,21 @@ export const HomeScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Monthly Report & Statement Modal */}
+      {defaultGroup && (
+        <MonthlyReportModal
+          visible={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          groupName={defaultGroup.name}
+          groupId={defaultGroup.groupId}
+          currentUserId={user?.uid}
+          members={groupMembers}
+          expenses={expenses}
+          settlements={settlements}
+          onMonthClosed={onRefresh}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -1043,5 +1072,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  monthlyReportPillBtn: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  monthlyReportPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#4F46E5',
   },
 });
