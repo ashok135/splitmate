@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if the current user is a member of the group
+    function isGroupMember(groupId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+    }
+
+    // Check if the current user is the owner of the group
+    function isGroupOwner(groupId) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'owner';
+    }
+
+    // ==========================================
+    // 1. Users collection
+    // ==========================================
+    match /users/{userId} {
+      // Any authenticated user can read minimal profile (for member names/avatars)
+      allow read: if isAuthenticated();
+      // Only the account owner can create or update their own profile document
+      allow create, update: if isOwner(userId);
+      allow delete: if false; // Disallow arbitrary user profile deletions
+
+      // Multi-device tokens for FCM
+      match /devices/{deviceId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ==========================================
+    // 2. Groups collection
+    // ==========================================
+    match /groups/{groupId} {
+      // Anyone authenticated can query groups by inviteCode to join
+      allow list: if isAuthenticated();
+      // Only members can view their group document
+      allow get: if isGroupMember(groupId);
+      // Any authenticated user can create a group if they set createdBy to themselves
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      // Members can update group metadata (e.g. member count, timestamps), owner can rename
+      allow update: if isGroupMember(groupId);
+      // Only group owner can delete group
+      allow delete: if isGroupOwner(groupId);
+
+      // Members subcollection
+      match /members/{memberId} {
+        // Members of the group can view all members
+        allow read: if isGroupMember(groupId);
+        // A user can join by adding their own UID document
+        allow create: if isAuthenticated() && request.auth.uid == memberId;
+        // Group owner/admin or the member themselves can update/leave/remove
+        allow update, delete: if isGroupOwner(groupId) || (isAuthenticated() && request.auth.uid == memberId);
+      }
+
+      // Expenses subcollection
+      match /expenses/{expenseId} {
+        allow read: if isGroupMember(groupId);
+        // Only a group member can add an expense, and paidBy must be authenticated
+        allow create: if isGroupMember(groupId) &&
+          (request.resource.data.paidBy == request.auth.uid || isGroupMember(groupId));
+        // Only group members can update or delete expenses
+        allow update, delete: if isGroupMember(groupId);
+
+        // Splits subcollection
+        match /splits/{splitUserId} {
+          allow read, write: if isGroupMember(groupId);
+        }
+      }
+
+      // Settlements subcollection
+      match /settlements/{settlementId} {
+        allow read: if isGroupMember(groupId);
+        // Payer must be authenticated user or group member
+        allow create: if isGroupMember(groupId) &&
+          (request.resource.data.fromUserId == request.auth.uid || isGroupMember(groupId));
+        allow update, delete: if isGroupMember(groupId);
+      }
+    }
+
+    // ==========================================
+    // 3. Processed Transactions (Duplicate Protection)
+    // ==========================================
+    match /processedTransactions/{fingerprint} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false; // Immutable once recorded
+    }
+
+    // ==========================================
+    // 4. Notifications collection
+    // ==========================================
+    match /notifications/{notificationId} {
+      // Authenticated users can read notifications
+      allow read: if isAuthenticated();
+      // Members can broadcast group expense notifications
+      allow create: if isAuthenticated() && request.resource.data.actorId == request.auth.uid;
+      // User can mark notification as read for their own UID
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+  }
+}

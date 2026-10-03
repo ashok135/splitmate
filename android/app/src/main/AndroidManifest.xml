@@ -1,0 +1,67 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.splitmate">
+
+    <!-- Network permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- SMS Detection Permissions -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- Notification Permissions (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+      android:name=".MainApplication"
+      android:label="SplitMate"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:allowBackup="false"
+      android:theme="@style/AppTheme"
+      android:supportsRtl="true">
+
+      <activity
+        android:name=".MainActivity"
+        android:label="SplitMate"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+
+        <!-- Deep Linking for notifications: splitmate://expense/:groupId/:expenseId -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="splitmate" />
+        </intent-filter>
+      </activity>
+
+      <!-- Native Bank SMS Detection BroadcastReceiver -->
+      <receiver
+        android:name=".SmsReceiver"
+        android:permission="android.permission.BROADCAST_SMS"
+        android:exported="true">
+        <intent-filter android:priority="999">
+          <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+        </intent-filter>
+      </receiver>
+
+      <!-- Local Notification Quick ADD action button receiver -->
+      <receiver
+        android:name=".QuickAddActionReceiver"
+        android:exported="false">
+        <intent-filter>
+          <action android:name="com.splitmate.ACTION_QUICK_ADD" />
+        </intent-filter>
+      </receiver>
+
+      <!-- Firebase Cloud Messaging Receiver & Service handled automatically by @react-native-firebase/messaging -->
+    </application>
+</manifest>

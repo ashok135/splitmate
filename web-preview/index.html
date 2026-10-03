@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SplitMate - Production Fintech Expense Sharing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: #111726;
+      --card-surface: #182238;
+      --card-elevated: #1F2C47;
+      --border: #1E293B;
+      --border-light: rgba(255, 255, 255, 0.08);
+      
+      --text: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+
+      --primary: #6366F1;
+      --primary-hover: #4F46E5;
+      --primary-glow: rgba(99, 102, 241, 0.3);
+
+      --emerald: #10B981;
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --emerald-border: rgba(16, 185, 129, 0.28);
+
+      --rose: #F43F5E;
+      --rose-bg: rgba(244, 63, 94, 0.12);
+      --rose-border: rgba(244, 63, 94, 0.28);
+
+      --amber: #F59E0B;
+      --amber-bg: rgba(245, 158, 11, 0.12);
+
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); -webkit-font-smoothing: antialiased; }
+    
+    body {
+      background: radial-gradient(circle at 50% 0%, #171E33 0%, #070A11 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    /* Device Mockup Shell */
+    .device-shell {
+      width: 100%;
+      max-width: 420px;
+      height: 870px;
+      background: #0B0F19;
+      border-radius: 46px;
+      border: 8px solid #1E2638;
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 40px rgba(99, 102, 241, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Status Bar / Notch */
+    .status-bar {
+      height: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      z-index: 20;
+    }
+    .island-pill {
+      width: 110px;
+      height: 22px;
+      background: #000;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .status-icons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* App Header */
+    .app-header {
+      padding: 6px 20px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #6366F1 0%, #4338CA 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #FFFFFF;
+    }
+    .brand-badge {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .live-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid var(--emerald-border);
+    }
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Scrollable Container */
+    .screen-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .screen-body::-webkit-scrollbar { width: 4px; }
+    .screen-body::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+
+    /* User Profile Bar */
+    .user-strip {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .user-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar-ring {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    .user-name { font-size: 13px; font-weight: 700; color: #FFFFFF; }
+    .user-sub { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+    
+    .btn-auth {
+      background: #FFFFFF;
+      color: #0F172A;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-auth:hover { background: #F1F5F9; transform: translateY(-1px); }
+    .btn-auth:active { transform: scale(0.96); }
+
+    /* Native Bank SMS Detection Card */
+    .sms-dock {
+      background: linear-gradient(135deg, #131E38 0%, #0F172A 100%);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sms-dock::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #6366F1, #38BDF8, #6366F1);
+      background-size: 200% 100%;
+      animation: gradientMove 3s linear infinite;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 200% 0%; }
+    }
+    .sms-dock-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sms-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #A5B4FC;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sms-source-tag {
+      font-size: 10px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .sms-preview-text {
+      font-size: 13px;
+      color: #E2E8F0;
+      line-height: 1.45;
+    }
+    .sms-preview-text strong { color: #FFFFFF; font-weight: 700; }
+    .sms-button-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .btn-quick-add {
+      flex: 1;
+      background: var(--emerald);
+      color: #FFFFFF;
+      border: none;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-quick-add:hover { background: #059669; }
+    .btn-quick-add:active { transform: scale(0.97); }
+
+    .btn-quick-view {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      color: #E2E8F0;
+      border: 1px solid var(--border);
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-quick-view:hover { background: rgba(255, 255, 255, 0.1); }
+    .btn-quick-view:active { transform: scale(0.97); }
+
+    /* Net Balance Card */
+    .balance-vault {
+      background: linear-gradient(145deg, #131A2B 0%, #0E1422 100%);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+    .vault-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .vault-group-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .vault-invite-pill {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #A5B4FC;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .vault-status-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .vault-status-label.positive { color: var(--emerald); }
+    .vault-status-label.negative { color: var(--rose); }
+
+    .vault-balance-num {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin: 4px 0 16px;
+      color: #FFFFFF;
+    }
+    .vault-balance-num.positive { color: var(--emerald); }
+    .vault-balance-num.negative { color: var(--rose); }
+
+    .vault-breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+    .vault-cell-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .vault-cell-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-top: 3px;
+    }
+
+    /* Primary Action Buttons */
+    .action-duo {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-main-action {
+      flex: 2;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      color: #FFFFFF;
+      border: none;
+      padding: 13px 16px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px var(--primary-glow);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-main-action:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+    .btn-main-action:active { transform: scale(0.97); }
+
+    .btn-sub-action {
+      flex: 1.2;
+      background: var(--card-bg);
+      color: #FFFFFF;
+      border: 1.5px solid var(--border);
+      padding: 13px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-sub-action:hover { background: var(--card-surface); border-color: #334155; }
+    .btn-sub-action:active { transform: scale(0.97); }
+
+    /* Section Headers */
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .section-title-clean {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-counter {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Cards & Lists */
+    .clean-list-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    /* Simplified Debt Items */
+    .debt-clean-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .debt-clean-row:last-child { border-bottom: none; }
+    .debt-party {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #E2E8F0;
+    }
+    .debt-party strong { color: #FFFFFF; }
+    .debt-arrow-icon { color: var(--text-muted); display: flex; }
+    .btn-settle-action {
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      border: 1px solid var(--emerald-border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .btn-settle-action:hover { background: var(--emerald); color: white; }
+    .btn-settle-action:active { transform: scale(0.95); }
+
+    /* Expense Clean Rows */
+    .expense-clean-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .expense-clean-row:hover { background: rgba(255, 255, 255, 0.02); }
+    .expense-clean-row:last-child { border-bottom: none; }
+    .expense-leading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .cat-icon-tile {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--card-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #A5B4FC;
+      border: 1px solid var(--border-light);
+    }
+    .expense-desc-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-auto-pill {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: var(--primary-glow);
+      color: #C7D2FE;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      letter-spacing: 0.4px;
+    }
+    .expense-date-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .expense-amt-block {
+      text-align: right;
+    }
+    .expense-amt-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+    .expense-per-person {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Simulator Panel */
+    .sim-dock {
+      background: #0D121F;
+      border: 1px dashed #334155;
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sim-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sim-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amber);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sim-sub-info { font-size: 10px; color: var(--text-muted); }
+    .sim-text-box {
+      width: 100%;
+      background: #151D2E;
+      border: 1px solid var(--border);
+      color: #F8FAFC;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+    .sim-text-box:focus { border-color: var(--primary); }
+    .btn-fire-sim {
+      width: 100%;
+      background: #1E293B;
+      color: #E2E8F0;
+      border: 1px solid #334155;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-fire-sim:hover { background: #25334D; color: #FFFFFF; border-color: #475569; }
+    .btn-fire-sim:active { transform: scale(0.98); }
+
+    /* Bottom Navigation Bar */
+    .nav-dock {
+      height: 64px;
+      background: #0B0F19;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 8px;
+      z-index: 10;
+    }
+    .nav-tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.2s ease;
+      position: relative;
+      padding: 6px 12px;
+      border-radius: 12px;
+    }
+    .nav-tab-item.active {
+      color: #FFFFFF;
+    }
+    .nav-tab-item.active .nav-icon {
+      color: var(--primary);
+    }
+    .nav-tab-item:hover { color: #E2E8F0; }
+    .nav-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+    .nav-tab-item:active .nav-icon {
+      transform: scale(0.9);
+    }
+
+    /* Modal Sheet */
+    .modal-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+      display: none;
+      align-items: flex-end;
+      opacity: 0;
+      transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-sheet {
+      width: 100%;
+      background: #111726;
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      border-top: 1px solid var(--border);
+      padding: 20px 20px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.open .modal-sheet {
+      transform: translateY(0);
+    }
+    .modal-handle {
+      width: 40px;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      margin: 0 auto 6px;
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-head h3 { font-size: 16px; font-weight: 800; color: #FFFFFF; }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: #94A3B8;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .modal-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .modal-input {
+      background: #182238;
+      border: 1px solid var(--border);
+      color: #FFFFFF;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: var(--primary); }
+    .btn-submit-modal {
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      padding: 13px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    /* Toast Notification */
+    .toast-pill {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      right: 20px;
+      background: #182238;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #FFFFFF;
+      z-index: 100;
+      transform: translateY(-80px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast-pill.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--emerald-bg);
+      color: var(--emerald);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>09:41</span>
+      <div class="island-pill"></div>
+      <div class="status-icons">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-pill" id="toastPill">
+      <div class="toast-icon-wrap" id="toastIcon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <span id="toastMsg">Action completed successfully</span>
+    </div>
+
+    <!-- App Header -->
+    <div class="app-header">
+      <div class="brand-mark">
+        <div class="brand-logo-icon">
+          <!-- Sleek Geometric Split Vector Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">SplitMate</div>
+          <div class="brand-badge">Fintech Engine</div>
+        </div>
+      </div>
+      <div class="live-chip">
+        <span class="live-dot"></span>
+        <span>Firebase Live</span>
+      </div>
+    </div>
+
+    <!-- Main Scrollable Screen Body -->
+    <div class="screen-body" id="screenBody">
+
+      <!-- User Profile Strip -->
+      <div class="user-strip">
+        <div class="user-meta">
+          <div class="avatar-ring" id="userAvatarText">A</div>
+          <div>
+            <div class="user-name" id="userNameLabel">Ashok (Account Owner)</div>
+            <div class="user-sub" id="userEmailLabel">splitmate-605bf • Free Spark</div>
+          </div>
+        </div>
+        <button class="btn-auth" id="authBtn" onclick="handleGoogleSignIn()">
+          <!-- Google 'G' Official Vector SVG -->
+          <svg width="13" height="13" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span id="authBtnText">Google Sign-In</span>
+        </button>
+      </div>
+
+      <!-- Native Bank SMS Auto-Detection Dock -->
+      <div class="sms-dock" id="smsCard">
+        <div class="sms-dock-top">
+          <div class="sms-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A5B4FC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            <span>Bank SMS Detected</span>
+          </div>
+          <span class="sms-source-tag">On-Device Kotlin</span>
+        </div>
+        <div class="sms-preview-text" id="smsPreviewText">
+          ₹500.00 debited from A/C XX1234 at <strong>XYZ Store</strong>. Add to <strong>Goa Trip (GOA7K2)</strong>?
+        </div>
+        <div class="sms-button-row">
+          <button class="btn-quick-add" onclick="handleQuickAddSms()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>1-Tap Add</span>
+          </button>
+          <button class="btn-quick-view" onclick="openAddExpenseModal('XYZ Store', 500)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Edit Split</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Net Position Vault -->
+      <div class="balance-vault">
+        <div class="vault-group-header">
+          <div class="vault-group-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Goa Trip</span>
+          </div>
+          <span class="vault-invite-pill" title="Click to copy invite code" onclick="copyInviteCode()">GOA7K2</span>
+        </div>
+
+        <div class="vault-status-label positive" id="vaultStatusText">You are owed overall</div>
+        <div class="vault-balance-num positive" id="vaultBalanceNumber">+₹375.00</div>
+
+        <div class="vault-breakdown">
+          <div>
+            <div class="vault-cell-label">You Paid</div>
+            <div class="vault-cell-val" id="youPaidDisplay">₹500.00</div>
+          </div>
+          <div>
+            <div class="vault-cell-label">Your Share</div>
+            <div class="vault-cell-val" id="yourShareDisplay">₹125.00</div>
+          </div>
+          <div>
+            <div class="vault-cell-label">Group Spend</div>
+            <div class="vault-cell-val" id="groupSpendDisplay">₹500.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Primary Action Buttons -->
+      <div class="action-duo">
+        <button class="btn-main-action" onclick="openAddExpenseModal('', '')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Add Expense</span>
+        </button>
+        <button class="btn-sub-action" onclick="openSettleModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"></path><path d="M15 10v12"></path><path d="M11 14v8"></path><path d="M4 10h16"></path><path d="M2 10l10-7 10 7"></path></svg>
+          <span>Settle Up</span>
+        </button>
+      </div>
+
+      <!-- Simplified Debts ("Who Owes Whom") -->
+      <div class="section-header-row">
+        <div class="section-title-clean">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          <span>Who Owes Whom</span>
+        </div>
+        <span class="section-counter" id="debtCountLabel">2 settlements</span>
+      </div>
+      <div class="clean-list-box" id="debtsContainer">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Recent Expenses Activity -->
+      <div class="section-header-row">
+        <div class="section-title-clean">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span>Group Activity</span>
+        </div>
+        <span class="section-counter" id="expenseCountLabel">1 entry</span>
+      </div>
+      <div class="clean-list-box" id="expensesContainer">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Bank SMS Simulation Engine Dock -->
+      <div class="sim-dock">
+        <div class="sim-label-row">
+          <div class="sim-tag">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Live Bank SMS Test Bench</span>
+          </div>
+          <span class="sim-sub-info">Zero Cloud Functions</span>
+        </div>
+        <input class="sim-text-box" id="smsInputBench" value="Rs.1250 debited from A/C XX4567 at Cafe Mambo on 03-10-26." />
+        <button class="btn-fire-sim" onclick="simulateNewIncomingSms()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+          <span>Simulate Incoming Bank SMS Broadcast</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar (No Emojis) -->
+    <div class="nav-dock">
+      <div class="nav-tab-item active" onclick="switchNavTab(this, 'home')">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </div>
+        <span>Home</span>
+      </div>
+      <div class="nav-tab-item" onclick="switchNavTab(this, 'groups')">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+        <span>Groups</span>
+      </div>
+      <div class="nav-tab-item" onclick="switchNavTab(this, 'alerts')">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </div>
+        <span>Activity</span>
+      </div>
+      <div class="nav-tab-item" onclick="switchNavTab(this, 'profile')">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <span>Profile</span>
+      </div>
+    </div>
+
+    <!-- Add Expense Modal Sheet -->
+    <div class="modal-overlay" id="addExpenseModal">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-head">
+          <h3>Add Group Expense</h3>
+          <button class="modal-close-btn" onclick="closeModal('addExpenseModal')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Expense Description / Merchant</label>
+          <input class="modal-input" id="expenseDescInput" placeholder="e.g. Seafood Dinner, Fuel, Airbnb" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Amount (INR ₹)</label>
+          <input class="modal-input" id="expenseAmountInput" type="number" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Split Mode</label>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-sub-action" style="flex:1; border-color:var(--primary); color:#A5B4FC;" id="splitEqualBtn">Equal Split (4 Members)</button>
+          </div>
+        </div>
+        <button class="btn-submit-modal" onclick="submitNewExpense()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Save to Firestore & Calculate</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Settle Up Modal Sheet -->
+    <div class="modal-overlay" id="settleModal">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-head">
+          <h3>Record Debt Settlement</h3>
+          <button class="modal-close-btn" onclick="closeModal('settleModal')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Select Member</label>
+          <select class="modal-input" id="settleMemberSelect">
+            <option value="u_arun">Arun</option>
+            <option value="u_kumar">Kumar</option>
+            <option value="u_priya">Priya</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Amount Settled (INR ₹)</label>
+          <input class="modal-input" id="settleAmountInput" type="number" step="0.01" value="125.00" />
+        </div>
+        <button class="btn-submit-modal" style="background:var(--emerald);" onclick="submitSettlement()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Confirm & Clear Debt</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase Modular Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsWcph8ORnShHN07YgjfvUa2RaxznefPc",
+      authDomain: "splitmate-605bf.firebaseapp.com",
+      projectId: "splitmate-605bf",
+      storageBucket: "splitmate-605bf.firebasestorage.app",
+      messagingSenderId: "329382178902",
+      appId: "1:329382178902:web:c620f6d91c582a45af8bf7",
+      measurementId: "G-X7TDPY7CMV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('userNameLabel').textContent = user.displayName || 'Google User';
+        document.getElementById('userEmailLabel').textContent = `${user.email || 'Authenticated'} • Live`;
+        document.getElementById('userAvatarText').textContent = (user.displayName || 'G')[0].toUpperCase();
+        document.getElementById('authBtnText').textContent = 'Sign Out';
+        document.getElementById('authBtn').onclick = () => {
+          signOut(auth).then(() => showToast('Signed out of Google session'));
+        };
+      } else {
+        document.getElementById('authBtnText').textContent = 'Google Sign-In';
+        document.getElementById('authBtn').onclick = window.handleGoogleSignIn;
+      }
+    });
+
+    window.handleGoogleSignIn = async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        showToast(`Authenticated as ${result.user.displayName}`);
+      } catch (err) {
+        showToast(`Auth status: ${err.message}`);
+      }
+    };
+  </script>
+
+  <script>
+    // State store mirroring Redux store
+    const store = {
+      currentUser: { uid: 'u_ashok', name: 'Ashok (You)' },
+      group: { id: 'grp_goa', name: 'Goa Trip', inviteCode: 'GOA7K2' },
+      members: [
+        { uid: 'u_ashok', name: 'Ashok (You)' },
+        { uid: 'u_arun', name: 'Arun' },
+        { uid: 'u_kumar', name: 'Kumar' },
+        { uid: 'u_priya', name: 'Priya' }
+      ],
+      expenses: [
+        {
+          id: 'exp_hotel_1',
+          description: 'Hotel Booking',
+          amount: 500,
+          paidBy: 'u_ashok',
+          source: 'bank_sms',
+          category: 'travel',
+          merchant: 'XYZ Store',
+          date: 'Today, 09:15 AM'
+        }
+      ],
+      settlements: []
+    };
+
+    function showToast(message) {
+      const pill = document.getElementById('toastPill');
+      document.getElementById('toastMsg').textContent = message;
+      pill.classList.add('show');
+      setTimeout(() => {
+        pill.classList.remove('show');
+      }, 3000);
+    }
+
+    function copyInviteCode() {
+      navigator.clipboard.writeText(store.group.inviteCode);
+      showToast(`Invite code ${store.group.inviteCode} copied to clipboard!`);
+    }
+
+    function switchNavTab(element, tabName) {
+      document.querySelectorAll('.nav-tab-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      showToast(`Navigated to ${tabName.charAt(0).toUpperCase() + tabName.slice(1)} view`);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function openAddExpenseModal(desc = '', amt = '') {
+      document.getElementById('expenseDescInput').value = desc;
+      document.getElementById('expenseAmountInput').value = amt;
+      openModal('addExpenseModal');
+    }
+
+    function openSettleModal() {
+      openModal('settleModal');
+    }
+
+    function submitNewExpense() {
+      const desc = document.getElementById('expenseDescInput').value.trim();
+      const amt = parseFloat(document.getElementById('expenseAmountInput').value);
+
+      if (!desc) {
+        showToast('Please enter an expense description');
+        return;
+      }
+      if (!amt || amt <= 0) {
+        showToast('Please enter a valid amount');
+        return;
+      }
+
+      store.expenses.unshift({
+        id: 'exp_' + Date.now(),
+        description: desc,
+        amount: amt,
+        paidBy: store.currentUser.uid,
+        source: 'manual',
+        category: 'food',
+        merchant: desc,
+        date: 'Just now'
+      });
+
+      closeModal('addExpenseModal');
+      recomputeFintechVault();
+      showToast(`Added ₹${amt.toFixed(2)} for ${desc}`);
+    }
+
+    function submitSettlement() {
+      const fromUid = document.getElementById('settleMemberSelect').value;
+      const amt = parseFloat(document.getElementById('settleAmountInput').value);
+      if (!amt || amt <= 0) {
+        showToast('Please enter a valid settlement amount');
+        return;
+      }
+
+      const member = store.members.find(m => m.uid === fromUid);
+      store.settlements.push({
+        from: fromUid,
+        to: store.currentUser.uid,
+        amount: amt
+      });
+
+      closeModal('settleModal');
+      recomputeFintechVault();
+      showToast(`Settled ₹${amt.toFixed(2)} with ${member.name}`);
+    }
+
+    function handleQuickAddSms() {
+      const card = document.getElementById('smsCard');
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        card.style.display = 'none';
+      }, 300);
+      showToast('1-Tap Quick Add: Added to Goa Trip successfully');
+    }
+
+    function simulateNewIncomingSms() {
+      const text = document.getElementById('smsInputBench').value;
+      const match = text.match(/(?:rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)/i);
+      const amt = match ? parseFloat(match[1].replace(/,/g, '')) : 850;
+
+      const merchantMatch = text.match(/(?:at|to)\s+([A-Za-z0-9\s&]+?)(?:\s+on|\s+ref|\.|$)/i);
+      const merchant = merchantMatch ? merchantMatch[1].trim() : 'Beach Bistro';
+
+      const card = document.getElementById('smsCard');
+      card.style.display = 'flex';
+      card.style.opacity = '1';
+      card.style.transform = 'scale(1)';
+
+      document.getElementById('smsPreviewText').innerHTML = 
+        `₹${amt.toFixed(2)} debited from A/C XX4567 at <strong>${merchant}</strong>. Add to <strong>Goa Trip (GOA7K2)</strong>?`;
+
+      // Update button handlers
+      card.querySelector('.btn-quick-add').onclick = () => {
+        store.expenses.unshift({
+          id: 'exp_' + Date.now(),
+          description: merchant,
+          amount: amt,
+          paidBy: store.currentUser.uid,
+          source: 'bank_sms',
+          category: 'food',
+          merchant: merchant,
+          date: 'Just now'
+        });
+        card.style.display = 'none';
+        recomputeFintechVault();
+        showToast(`1-Tap Added ₹${amt.toFixed(2)} (${merchant})`);
+      };
+
+      showToast(`Detected ₹${amt.toFixed(2)} SMS transaction`);
+    }
+
+    // Exact Integer Paise Debt Simplification Engine
+    function recomputeFintechVault() {
+      const balances = {};
+      store.members.forEach(m => {
+        balances[m.uid] = { totalPaid: 0, totalOwed: 0, net: 0, name: m.name };
+      });
+
+      // Tally expenses with exact paise splitting
+      store.expenses.forEach(e => {
+        const totalPaise = Math.round(e.amount * 100);
+        balances[e.paidBy].totalPaid += e.amount;
+
+        const count = store.members.length;
+        const base = Math.floor(totalPaise / count);
+        let rem = totalPaise % count;
+
+        store.members.forEach(m => {
+          const sharePaise = base + (rem > 0 ? 1 : 0);
+          if (rem > 0) rem--;
+          balances[m.uid].totalOwed += (sharePaise / 100);
+        });
+      });
+
+      // Tally settlements
+      store.settlements.forEach(s => {
+        balances[s.from].totalPaid += s.amount;
+        balances[s.to].totalOwed += s.amount;
+      });
+
+      Object.values(balances).forEach(b => {
+        b.net = Number((b.totalPaid - b.totalOwed).toFixed(2));
+      });
+
+      renderFintechUI(balances);
+    }
+
+    function renderFintechUI(balances) {
+      const myBal = balances[store.currentUser.uid];
+      const isPositive = myBal.net > 0.01;
+      const isNegative = myBal.net < -0.01;
+
+      const statusEl = document.getElementById('vaultStatusText');
+      const numEl = document.getElementById('vaultBalanceNumber');
+
+      if (isPositive) {
+        statusEl.textContent = 'You are owed overall';
+        statusEl.className = 'vault-status-label positive';
+        numEl.textContent = '+₹' + myBal.net.toFixed(2);
+        numEl.className = 'vault-balance-num positive';
+      } else if (isNegative) {
+        statusEl.textContent = 'You owe overall';
+        statusEl.className = 'vault-status-label negative';
+        numEl.textContent = '-₹' + Math.abs(myBal.net).toFixed(2);
+        numEl.className = 'vault-balance-num negative';
+      } else {
+        statusEl.textContent = 'All balances are squared';
+        statusEl.className = 'vault-status-label';
+        numEl.textContent = '₹0.00';
+        numEl.className = 'vault-balance-num';
+      }
+
+      document.getElementById('youPaidDisplay').textContent = '₹' + myBal.totalPaid.toFixed(2);
+      document.getElementById('yourShareDisplay').textContent = '₹' + myBal.totalOwed.toFixed(2);
+
+      const groupSpend = store.expenses.reduce((s, e) => s + e.amount, 0);
+      document.getElementById('groupSpendDisplay').textContent = '₹' + groupSpend.toFixed(2);
+
+      // Render simplified debts
+      const debtsBox = document.getElementById('debtsContainer');
+      debtsBox.innerHTML = '';
+      const pendingDebts = [];
+      store.members.filter(m => m.uid !== store.currentUser.uid).forEach(m => {
+        const net = balances[m.uid].net;
+        if (net < -0.01) {
+          pendingDebts.push({ fromUid: m.uid, name: m.name, amount: Math.abs(net) });
+        }
+      });
+
+      document.getElementById('debtCountLabel').textContent = `${pendingDebts.length} pending`;
+
+      if (pendingDebts.length === 0) {
+        debtsBox.innerHTML = `
+          <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>All members are fully settled up!</span>
+          </div>`;
+      } else {
+        pendingDebts.forEach(d => {
+          debtsBox.innerHTML += `
+            <div class="debt-clean-row">
+              <div class="debt-party">
+                <strong>${d.name}</strong>
+                <span class="debt-arrow-icon">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </span>
+                <span>owes you <strong>₹${d.amount.toFixed(2)}</strong></span>
+              </div>
+              <button class="btn-settle-action" onclick="recordDirectSettle('${d.fromUid}', ${d.amount})">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Settle</span>
+              </button>
+            </div>
+          `;
+        });
+      }
+
+      // Render expense activity list
+      const expBox = document.getElementById('expensesContainer');
+      expBox.innerHTML = '';
+      document.getElementById('expenseCountLabel').textContent = `${store.expenses.length} entries`;
+
+      store.expenses.forEach(e => {
+        const isSms = e.source === 'bank_sms';
+        const perPerson = (e.amount / store.members.length).toFixed(2);
+        expBox.innerHTML += `
+          <div class="expense-clean-row">
+            <div class="expense-leading">
+              <div class="cat-icon-tile">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+              </div>
+              <div>
+                <div class="expense-desc-title">
+                  <span>${e.merchant || e.description}</span>
+                  ${isSms ? '<span class="badge-auto-pill">SMS AUTO</span>' : ''}
+                </div>
+                <div class="expense-date-sub">Paid by ${e.paidBy === 'u_ashok' ? 'You' : 'Member'} • ${e.date}</div>
+              </div>
+            </div>
+            <div class="expense-amt-block">
+              <div class="expense-amt-val">₹${e.amount.toFixed(2)}</div>
+              <div class="expense-per-person">₹${perPerson}/person</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function recordDirectSettle(fromUid, amount) {
+      const member = store.members.find(m => m.uid === fromUid);
+      store.settlements.push({
+        from: fromUid,
+        to: store.currentUser.uid,
+        amount: amount
+      });
+      recomputeFintechVault();
+      showToast(`Settled ₹${amount.toFixed(2)} with ${member.name}`);
+    }
+
+    // Initialize initial calculations
+    recomputeFintechVault();
+  </script>
+</body>
+</html>
