@@ -7,6 +7,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
+  Animated,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,18 +25,66 @@ import { formatINR } from '../../utils/currency';
 type GroupDetailsRouteProp = RouteProp<RootStackParamList, 'GroupDetails'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
+// ─── Skeleton Loader ────────────────────────────────────────────────────────
+const SkeletonBox = ({ width, height, style }: { width?: number | string; height: number; style?: any }) => {
+  const anim = React.useRef(new Animated.Value(0.3)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [anim]);
+
+  return (
+    <Animated.View
+      style={[
+        { width: width || '100%', height, borderRadius: 10, backgroundColor: '#E2E8F0', opacity: anim },
+        style,
+      ]}
+    />
+  );
+};
+
+const GroupDetailsSkeleton = () => (
+  <ScrollView contentContainerStyle={skeletonStyles.wrap}>
+    <View style={skeletonStyles.card}>
+      <SkeletonBox height={24} width="60%" style={{ marginBottom: 12 }} />
+      <SkeletonBox height={16} width="40%" style={{ marginBottom: 16 }} />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {[1, 2, 3].map((i) => <SkeletonBox key={i} width={36} height={36} style={{ borderRadius: 18 }} />)}
+      </View>
+    </View>
+    <SkeletonBox height={100} style={{ marginBottom: 12 }} />
+    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+      <SkeletonBox height={46} style={{ flex: 2 }} />
+      <SkeletonBox height={46} style={{ flex: 1 }} />
+    </View>
+    {[1, 2, 3].map((i) => <SkeletonBox key={i} height={72} style={{ marginBottom: 10 }} />)}
+  </ScrollView>
+);
+
+const skeletonStyles = StyleSheet.create({
+  wrap: { padding: 18, paddingBottom: 40 },
+  card: { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginBottom: 12 },
+});
+
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 export const GroupDetailsScreen = () => {
   const route = useRoute<GroupDetailsRouteProp>();
   const navigation = useNavigation<NavProp>();
   const { groupId } = route.params;
 
   const { user, updateDefaultGroup } = useAuth();
-  const { groups, fetchMembers, members } = useGroups();
+  const { groups, fetchMembers, members, deleteGroup } = useGroups();
   const group = groups.find((g) => g.groupId === groupId);
   const groupMembers = members[groupId] || [];
 
   const { expenses, settlements, balances, debts, refreshGroupData, loading } = useExpenses(groupId);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchMembers(groupId).then((mList) => {
@@ -50,10 +100,45 @@ export const GroupDetailsScreen = () => {
   };
 
   const isDefault = user?.defaultGroupId === groupId;
+  const isOwner = group?.createdBy === user?.uid;
   const userBalance = user?.uid && balances[user.uid] ? balances[user.uid].netBalance : 0;
+
   const totalGroupExpenses = useMemo(() => {
     return expenses.reduce((sum, e) => sum + e.amount, 0);
   }, [expenses]);
+
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      '🗑️ Delete Group',
+      `Are you sure you want to delete "${group?.name}"? This will permanently delete all expenses and data. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await deleteGroup(groupId);
+              navigation.reset({ index: 0, routes: [{ name: 'Main' as any }] });
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to delete group');
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (loading && expenses.length === 0 && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <GroupDetailsSkeleton />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,19 +150,37 @@ export const GroupDetailsScreen = () => {
         <View style={styles.headerCard}>
           <View style={styles.titleRow}>
             <Text style={styles.groupName}>{group?.name || 'Group Details'}</Text>
-            {isDefault ? (
-              <View style={styles.defaultPill}>
-                <Text style={styles.defaultPillText}>DEFAULT</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.setDefaultBtn}
-                onPress={() => updateDefaultGroup(groupId)}
-              >
-                <Text style={styles.setDefaultText}>Set as Default</Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.pillsRow}>
+              {isDefault ? (
+                <View style={styles.defaultPill}>
+                  <Text style={styles.defaultPillText}>DEFAULT</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.setDefaultBtn}
+                  onPress={() => updateDefaultGroup(groupId)}
+                >
+                  <Text style={styles.setDefaultText}>Set Default</Text>
+                </TouchableOpacity>
+              )}
+              {isOwner && (
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={handleDeleteGroup}
+                  disabled={deleting}
+                >
+                  <Text style={styles.deleteBtnText}>🗑️ Delete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
+
+          {/* Owner badge */}
+          {isOwner && (
+            <View style={styles.ownerBadge}>
+              <Text style={styles.ownerBadgeText}>👑 You created this group</Text>
+            </View>
+          )}
 
           {/* Invite Code row */}
           <View style={styles.codeRow}>
@@ -141,11 +244,11 @@ export const GroupDetailsScreen = () => {
                   <View key={`${debt.fromUserId}_${debt.toUserId}_${index}`} style={styles.debtRow}>
                     <View style={styles.debtInfo}>
                       <Text style={styles.debtNames}>
-                        <Text style={isUserDebtor ? styles.boldName : null}>
+                        <Text style={isUserDebtor ? styles.boldName : undefined}>
                           {isUserDebtor ? 'You' : debt.fromName}
                         </Text>
                         {' owes '}
-                        <Text style={isUserCreditor ? styles.boldName : null}>
+                        <Text style={isUserCreditor ? styles.boldName : undefined}>
                           {isUserCreditor ? 'you' : debt.toName}
                         </Text>
                       </Text>
@@ -257,6 +360,11 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     flex: 1,
   },
+  pillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   defaultPill: {
     backgroundColor: '#E0F2FE',
     paddingHorizontal: 8,
@@ -276,6 +384,34 @@ const styles = StyleSheet.create({
   },
   setDefaultText: {
     color: '#475569',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  deleteBtn: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  deleteBtnText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  ownerBadge: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  ownerBadgeText: {
+    color: '#92400E',
     fontSize: 12,
     fontWeight: '600',
   },

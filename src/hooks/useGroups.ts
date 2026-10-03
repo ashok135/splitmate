@@ -70,6 +70,18 @@ export const useGroups = () => {
     [dispatch]
   );
 
+  const deleteGroup = async (groupId: string): Promise<void> => {
+    try {
+      dispatch(setGroupLoading(true));
+      await groupService.deleteGroup(groupId);
+      const updated = groups.filter((g) => g.groupId !== groupId);
+      dispatch(setGroups(updated));
+    } catch (err: any) {
+      dispatch(setGroupError(err.message));
+      throw err;
+    }
+  };
+
   const selectGroup = (group: Group | null) => {
     dispatch(setActiveGroup(group));
   };
@@ -85,5 +97,6 @@ export const useGroups = () => {
     joinGroup,
     fetchMembers,
     selectGroup,
+    deleteGroup,
   };
 };
