@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Button } from './Button';
+import { Icon } from './Icon';
+import { COLORS } from '../constants/theme';
 
 interface EmptyStateProps {
+  iconName?: string;
   icon?: string;
   title: string;
   description: string;
@@ -11,15 +14,19 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon = '📂',
+  iconName,
+  icon,
   title,
   description,
   actionTitle,
   onAction,
 }) => {
+  const activeIcon = iconName || 'inbox';
   return (
     <View style={styles.container}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconCircle}>
+        <Icon name={activeIcon} size={28} color={COLORS.primary} />
+      </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {actionTitle && onAction && (
@@ -42,22 +49,29 @@ const styles = StyleSheet.create({
     padding: 32,
     marginVertical: 20,
   },
-  icon: {
-    fontSize: 48,
-    marginBottom: 12,
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#0F172A',
+    color: COLORS.text,
     marginBottom: 6,
     textAlign: 'center',
   },
   description: {
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: 13,
+    color: COLORS.textMuted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
     marginBottom: 16,
     maxWidth: 280,
   },

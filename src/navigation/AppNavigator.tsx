@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { RootStackParamList, MainTabParamList } from './types';
@@ -16,6 +16,8 @@ import { SettlementScreen } from '../screens/settlements/SettlementScreen';
 import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
+import { Icon } from '../components/Icon';
+import { COLORS } from '../constants/theme';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,8 +28,8 @@ const MainTabs = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#0F172A',
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
@@ -36,7 +38,7 @@ const MainTabs = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>🏠</Text>,
+          tabBarIcon: ({ color, size }) => <Icon name="home" size={size || 20} color={color} />,
         }}
       />
       <Tab.Screen
@@ -44,15 +46,15 @@ const MainTabs = () => {
         component={GroupsScreen}
         options={{
           tabBarLabel: 'Groups',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>👥</Text>,
+          tabBarIcon: ({ color, size }) => <Icon name="users" size={size || 20} color={color} />,
         }}
       />
       <Tab.Screen
         name="NotificationsTab"
         component={NotificationsScreen}
         options={{
-          tabBarLabel: 'Alerts',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>🔔</Text>,
+          tabBarLabel: 'Activity',
+          tabBarIcon: ({ color, size }) => <Icon name="bell" size={size || 20} color={color} />,
         }}
       />
       <Tab.Screen
@@ -60,7 +62,7 @@ const MainTabs = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>👤</Text>,
+          tabBarIcon: ({ color, size }) => <Icon name="user" size={size || 20} color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -71,9 +73,9 @@ export const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#FFFFFF' },
-        headerTitleStyle: { fontWeight: '700', color: '#0F172A' },
-        headerTintColor: '#0F172A',
+        headerStyle: { backgroundColor: COLORS.surface },
+        headerTitleStyle: { fontWeight: '700', color: COLORS.text },
+        headerTintColor: COLORS.text,
         headerShadowVisible: false,
         animation: 'slide_from_right',
       }}
@@ -134,18 +136,15 @@ export const AppNavigator = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    height: 60,
-    paddingBottom: 6,
-    paddingTop: 6,
+    borderTopColor: COLORS.border,
+    height: 64,
+    paddingBottom: 8,
+    paddingTop: 8,
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: '600',
-  },
-  tabIcon: {
-    fontSize: 20,
+    fontWeight: '700',
   },
 });
