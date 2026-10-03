@@ -175,7 +175,7 @@ export const HomeScreen = () => {
         <View style={styles.topHeader}>
           <View style={{ flex: 1 }}>
             <Text style={styles.greeting}>
-              Hello, {user?.displayName?.split(' ')[0] || 'Friend'} 👋
+              Hello, {user?.displayName?.split(' ')[0] || 'Friend'}
             </Text>
             <Text style={styles.subGreeting}>
               {defaultGroup ? `${defaultGroup.name} • Monthly Overview` : 'Expense & Split Dashboard'}
@@ -193,7 +193,10 @@ export const HomeScreen = () => {
               {seeding ? (
                 <ActivityIndicator size="small" color="#4F46E5" />
               ) : (
-                <Text style={styles.demoPillText}>⚡ 4 Members</Text>
+                <View style={styles.iconTextInline}>
+                  <Icon name="users" size={13} color="#4F46E5" />
+                  <Text style={styles.demoPillText}> 4 Members</Text>
+                </View>
               )}
             </TouchableOpacity>
 
@@ -210,7 +213,10 @@ export const HomeScreen = () => {
         {detectedTx && defaultGroup && (
           <View style={styles.txAlertCard}>
             <View style={styles.txAlertHeader}>
-              <Text style={styles.txAlertTitle}>Bank Transaction Detected</Text>
+              <View style={styles.iconTextInline}>
+                <Icon name="bell" size={16} color="#1D4ED8" />
+                <Text style={styles.txAlertTitle}> Bank Transaction Detected</Text>
+              </View>
               <TouchableOpacity onPress={() => setDetectedTx(null)}>
                 <Text style={styles.closeAlert}>✕</Text>
               </TouchableOpacity>
@@ -269,22 +275,31 @@ export const HomeScreen = () => {
                     : styles.badgeSettled,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.heroBadgeText,
-                    userBalance < 0
-                      ? styles.badgeTextOwe
+                <View style={styles.iconTextInline}>
+                  {userBalance < 0 ? (
+                    <Icon name="arrow-up-right" size={13} color="#E11D48" />
+                  ) : userBalance > 0 ? (
+                    <Icon name="arrow-down-left" size={13} color="#15803D" />
+                  ) : (
+                    <Icon name="check-circle" size={13} color="#475569" />
+                  )}
+                  <Text
+                    style={[
+                      styles.heroBadgeText,
+                      userBalance < 0
+                        ? styles.badgeTextOwe
+                        : userBalance > 0
+                        ? styles.badgeTextReceive
+                        : styles.badgeTextSettled,
+                    ]}
+                  >
+                    {userBalance < 0
+                      ? ' YOU HAVE TO PAY'
                       : userBalance > 0
-                      ? styles.badgeTextReceive
-                      : styles.badgeTextSettled,
-                  ]}
-                >
-                  {userBalance < 0
-                    ? '🔴 YOU HAVE TO PAY'
-                    : userBalance > 0
-                    ? '🟢 YOU ARE OWED'
-                    : '✨ ALL SETTLED UP'}
-                </Text>
+                      ? ' YOU ARE OWED'
+                      : ' ALL SETTLED UP'}
+                  </Text>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -352,7 +367,10 @@ export const HomeScreen = () => {
                   onPress={() => navigation.navigate('Settlement', { groupId: defaultGroup.groupId })}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.heroSettleBtnText}>⚡ Settle Month's Dues</Text>
+                  <View style={styles.iconTextInline}>
+                    <Icon name="check" size={16} color="#FFFFFF" />
+                    <Text style={styles.heroSettleBtnText}> Settle Month's Dues</Text>
+                  </View>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
@@ -360,14 +378,17 @@ export const HomeScreen = () => {
                   onPress={() => navigation.navigate('AddExpense', { groupId: defaultGroup.groupId })}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.heroAddBtnText}>+ Add New Expense</Text>
+                  <View style={styles.iconTextInline}>
+                    <Icon name="plus" size={16} color="#FFFFFF" />
+                    <Text style={styles.heroAddBtnText}> Add New Expense</Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
           </View>
         ) : (
           <View style={styles.noGroupHero}>
-            <Text style={styles.noGroupIcon}>👥</Text>
+            <Icon name="users" size={40} color="#64748B" />
             <Text style={styles.noGroupTitle}>No Active Group</Text>
             <Text style={styles.noGroupSub}>
               Create a group or load the 4-member flatmates demo to start tracking and monthly settlements.
@@ -379,7 +400,7 @@ export const HomeScreen = () => {
                 style={{ flex: 1 }}
               />
               <Button
-                title="⚡ Load 4-Member Demo"
+                title="Load 4-Member Demo"
                 variant="outline"
                 onPress={handleSeedDemoData}
                 style={{ flex: 1 }}
@@ -399,7 +420,7 @@ export const HomeScreen = () => {
               style={styles.quickAddBtn}
             />
             <Button
-              title="🤝 Settle Up"
+              title="Settle Up"
               variant="outline"
               onPress={() => navigation.navigate('Settlement', { groupId: defaultGroup.groupId })}
               style={styles.settleBtn}
@@ -414,7 +435,10 @@ export const HomeScreen = () => {
           <View style={styles.monthlySettleCard}>
             <View style={styles.monthlySettleHeader}>
               <View>
-                <Text style={styles.monthlySettleTitle}>🗓️ Monthly Settlement Cycle</Text>
+                <View style={styles.iconTextInline}>
+                  <Icon name="calendar" size={17} color="#4F46E5" />
+                  <Text style={styles.monthlySettleTitle}> Monthly Settlement Cycle</Text>
+                </View>
                 <Text style={styles.monthlySettleSub}>
                   Expenses settled once a month. Clear debts via UPI.
                 </Text>
@@ -436,7 +460,13 @@ export const HomeScreen = () => {
                   return (
                     <View key={`${d.fromUserId}_${d.toUserId}_${index}`} style={styles.debtItem}>
                       <View style={styles.debtItemLeft}>
-                        <Text style={styles.debtIcon}>{isMeDebtor ? '💸' : '💰'}</Text>
+                        <View style={styles.debtIconWrap}>
+                          <Icon
+                            name={isMeDebtor ? 'arrow-up-right' : 'arrow-down-left'}
+                            size={16}
+                            color={isMeDebtor ? '#DC2626' : '#16A34A'}
+                          />
+                        </View>
                         <View>
                           <Text style={styles.debtItemText}>
                             <Text style={{ fontWeight: '800', color: '#0F172A' }}>
@@ -480,7 +510,10 @@ export const HomeScreen = () => {
               </View>
             ) : (
               <View style={styles.noDebtsBox}>
-                <Text style={styles.noDebtsText}>🎉 All flatmates are settled up for this month!</Text>
+                <View style={styles.iconTextInline}>
+                  <Icon name="check-circle" size={15} color="#15803D" />
+                  <Text style={styles.noDebtsText}> All flatmates are settled up for this month!</Text>
+                </View>
               </View>
             )}
           </View>
@@ -998,5 +1031,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0284C7',
+  },
+  iconTextInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  debtIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

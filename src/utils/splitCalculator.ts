@@ -180,54 +180,71 @@ export const calculateBalances = (
   settlements: Settlement[] = []
 ): Record<string, UserBalance> => {
   const balances: Record<string, UserBalance> = {};
+  const paidPaise: Record<string, number> = {};
+  const owedPaise: Record<string, number> = {};
 
-  // Initialize for all members
+  // Helper to ensure member is initialized
+  const ensureMember = (uid: string, name?: string) => {
+    if (!balances[uid]) {
+      balances[uid] = {
+        userId: uid,
+        displayName: name || 'Member',
+        totalPaid: 0,
+        totalOwed: 0,
+        netBalance: 0,
+      };
+      paidPaise[uid] = 0;
+      owedPaise[uid] = 0;
+    }
+  };
+
+  // Initialize for all known members
   members.forEach((m) => {
-    balances[m.uid] = {
-      userId: m.uid,
-      displayName: m.displayName || 'Unknown',
-      totalPaid: 0,
-      totalOwed: 0,
-      netBalance: 0,
-    };
+    ensureMember(m.uid, m.displayName);
   });
 
-  // Tally expenses
+  // Tally expenses with integer paise
   expenses.forEach((expense) => {
     const payerId = expense.paidBy;
-    const amountPaise = rupeesToPaise(expense.amount);
+    ensureMember(payerId);
+    paidPaise[payerId] += rupeesToPaise(expense.amount);
 
-    if (balances[payerId]) {
-      balances[payerId].totalPaid += expense.amount;
-    }
-
-    if (expense.splits) {
+    if (expense.splits && Object.keys(expense.splits).length > 0) {
       Object.values(expense.splits).forEach((split) => {
-        if (balances[split.userId]) {
-          balances[split.userId].totalOwed += split.amountOwed;
-        }
+        ensureMember(split.userId);
+        const splitPaise = split.amountOwedPaise ?? rupeesToPaise(split.amountOwed);
+        owedPaise[split.userId] += splitPaise;
+      });
+    } else {
+      // Fallback: If no splits recorded, distribute equally across group members
+      const activeMembers = members.length > 0 ? members : [{ uid: payerId, displayName: 'Payer' } as GroupMember];
+      const count = activeMembers.length;
+      const totalP = rupeesToPaise(expense.amount);
+      const base = Math.floor(totalP / count);
+      let rem = totalP % count;
+
+      activeMembers.forEach((m) => {
+        ensureMember(m.uid, m.displayName);
+        owedPaise[m.uid] += base + (rem > 0 ? 1 : 0);
+        if (rem > 0) rem--;
       });
     }
   });
 
-  // Tally settlements
+  // Tally settlements with integer paise
   settlements.forEach((settlement) => {
-    // fromUserId paid the settlement
-    if (balances[settlement.fromUserId]) {
-      balances[settlement.fromUserId].totalPaid += settlement.amount;
-    }
-    // toUserId received the settlement
-    if (balances[settlement.toUserId]) {
-      balances[settlement.toUserId].totalOwed += settlement.amount;
-    }
+    ensureMember(settlement.fromUserId);
+    ensureMember(settlement.toUserId);
+    paidPaise[settlement.fromUserId] += rupeesToPaise(settlement.amount);
+    owedPaise[settlement.toUserId] += rupeesToPaise(settlement.amount);
   });
 
-  // Compute net balance and round cleanly
-  Object.values(balances).forEach((b) => {
-    const netPaise = rupeesToPaise(b.totalPaid) - rupeesToPaise(b.totalOwed);
-    b.totalPaid = paiseToRupees(rupeesToPaise(b.totalPaid));
-    b.totalOwed = paiseToRupees(rupeesToPaise(b.totalOwed));
-    b.netBalance = paiseToRupees(netPaise);
+  // Compute final amounts in exact 2-decimal Rupees
+  Object.keys(balances).forEach((uid) => {
+    const b = balances[uid];
+    b.totalPaid = paiseToRupees(paidPaise[uid]);
+    b.totalOwed = paiseToRupees(owedPaise[uid]);
+    b.netBalance = paiseToRupees(paidPaise[uid] - owedPaise[uid]);
   });
 
   return balances;
@@ -245,9 +262,9 @@ export const simplifyDebts = (
 
   Object.values(balances).forEach((b) => {
     const netPaise = rupeesToPaise(b.netBalance);
-    if (netPaise < -5) {
+    if (netPaise < 0) {
       debtors.push({ uid: b.userId, name: b.displayName, amountPaise: -netPaise });
-    } else if (netPaise > 5) {
+    } else if (netPaise > 0) {
       creditors.push({ uid: b.userId, name: b.displayName, amountPaise: netPaise });
     }
   });

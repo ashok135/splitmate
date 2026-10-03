@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Expense, Settlement } from '../types/expense';
 import { GroupMember } from '../types/group';
 import { formatINR } from '../utils/currency';
+import { Icon } from './Icon';
 
 interface HistoryItem {
   id: string;
@@ -16,7 +17,8 @@ interface HistoryItem {
   paidByName: string;
   isCurrentUserPayer: boolean;
   userShare: number;
-  categoryIcon: string;
+  iconName: string;
+  iconColor: string;
   iconBg: string;
   rawExpense?: Expense;
   rawSettlement?: Settlement;
@@ -33,24 +35,55 @@ interface MonthlyHistoryListProps {
 const getCategoryDetails = (desc: string = '', merchant: string = '') => {
   const text = `${desc} ${merchant}`.toLowerCase();
   if (text.includes('rent') || text.includes('flat') || text.includes('room')) {
-    return { icon: '🏠', bg: '#EEF2FF', color: '#4F46E5' }; // Indigo
+    return { iconName: 'home', bg: '#EEF2FF', color: '#4F46E5' }; // Indigo
   }
-  if (text.includes('swiggy') || text.includes('zomato') || text.includes('food') || text.includes('dinner') || text.includes('lunch') || text.includes('biryani')) {
-    return { icon: '🍔', bg: '#FFF7ED', color: '#EA580C' }; // Orange
+  if (
+    text.includes('swiggy') ||
+    text.includes('zomato') ||
+    text.includes('food') ||
+    text.includes('dinner') ||
+    text.includes('lunch') ||
+    text.includes('biryani')
+  ) {
+    return { iconName: 'coffee', bg: '#FFF7ED', color: '#EA580C' }; // Orange
   }
-  if (text.includes('wifi') || text.includes('airtel') || text.includes('electric') || text.includes('bescom') || text.includes('bill') || text.includes('power')) {
-    return { icon: '⚡', bg: '#FEF3C7', color: '#D97706' }; // Amber
+  if (
+    text.includes('wifi') ||
+    text.includes('airtel') ||
+    text.includes('electric') ||
+    text.includes('bescom') ||
+    text.includes('bill') ||
+    text.includes('power')
+  ) {
+    return { iconName: 'zap', bg: '#FEF3C7', color: '#D97706' }; // Amber
   }
-  if (text.includes('grocer') || text.includes('supermarket') || text.includes('market') || text.includes('veggie')) {
-    return { icon: '🛒', bg: '#ECFDF5', color: '#059669' }; // Emerald
+  if (
+    text.includes('grocer') ||
+    text.includes('supermarket') ||
+    text.includes('market') ||
+    text.includes('veggie')
+  ) {
+    return { iconName: 'shopping-cart', bg: '#ECFDF5', color: '#059669' }; // Emerald
   }
-  if (text.includes('movie') || text.includes('pvr') || text.includes('cinema') || text.includes('netflix') || text.includes('ticket')) {
-    return { icon: '🎬', bg: '#FDF2F8', color: '#DB2777' }; // Pink
+  if (
+    text.includes('movie') ||
+    text.includes('pvr') ||
+    text.includes('cinema') ||
+    text.includes('netflix') ||
+    text.includes('ticket')
+  ) {
+    return { iconName: 'film', bg: '#FDF2F8', color: '#DB2777' }; // Pink
   }
-  if (text.includes('cab') || text.includes('uber') || text.includes('ola') || text.includes('travel') || text.includes('flight')) {
-    return { icon: '🚕', bg: '#EFF6FF', color: '#2563EB' }; // Blue
+  if (
+    text.includes('cab') ||
+    text.includes('uber') ||
+    text.includes('ola') ||
+    text.includes('travel') ||
+    text.includes('flight')
+  ) {
+    return { iconName: 'navigation', bg: '#EFF6FF', color: '#2563EB' }; // Blue
   }
-  return { icon: '💳', bg: '#F1F5F9', color: '#475569' }; // Slate
+  return { iconName: 'credit-card', bg: '#F1F5F9', color: '#475569' }; // Slate
 };
 
 const formatGPayDate = (timestamp: number): string => {
@@ -91,10 +124,10 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
     expenses.forEach((e) => {
       const payerName = memberMap.get(e.paidBy) || (e.paidBy === currentUserId ? 'You' : 'Member');
       const isCurrentUserPayer = e.paidBy === currentUserId;
-      const { icon, bg } = getCategoryDetails(e.description, e.merchant);
-      
+      const { iconName, bg, color } = getCategoryDetails(e.description, e.merchant);
+
       const userSplit = currentUserId && e.splits ? e.splits[currentUserId] : null;
-      const userShare = userSplit ? userSplit.amountOwed : (e.amount / Math.max(members.length, 1));
+      const userShare = userSplit ? userSplit.amountOwed : e.amount / Math.max(members.length, 1);
 
       items.push({
         id: e.expenseId,
@@ -108,7 +141,8 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
         paidByName: payerName,
         isCurrentUserPayer,
         userShare,
-        categoryIcon: icon,
+        iconName,
+        iconColor: color,
         iconBg: bg,
         rawExpense: e,
       });
@@ -133,7 +167,8 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
         paidByName: fromName,
         isCurrentUserPayer,
         userShare: isCurrentUserRecipient ? s.amount : 0,
-        categoryIcon: '🤝',
+        iconName: 'check-circle',
+        iconColor: '#0D9488',
         iconBg: '#F0FDF4',
         rawSettlement: s,
       });
@@ -159,7 +194,7 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
   if (historyItems.length === 0) {
     return (
       <View style={styles.emptyWrap}>
-        <Text style={styles.emptyIcon}>🧾</Text>
+        <Icon name="file-text" size={32} color="#94A3B8" />
         <Text style={styles.emptyTitle}>No Transaction History</Text>
         <Text style={styles.emptySubtitle}>All your monthly group expenses will be organized here like GPay.</Text>
       </View>
@@ -199,7 +234,7 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
                   >
                     {/* Category Icon */}
                     <View style={[styles.avatarCircle, { backgroundColor: item.iconBg }]}>
-                      <Text style={styles.avatarIcon}>{item.categoryIcon}</Text>
+                      <Icon name={item.iconName} size={20} color={item.iconColor} />
                     </View>
 
                     {/* Transaction Details */}
@@ -306,9 +341,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  avatarIcon: {
-    fontSize: 20,
-  },
   detailsCol: {
     flex: 1,
     marginRight: 8,
@@ -373,14 +405,11 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     marginTop: 8,
   },
-  emptyIcon: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
+    marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 13,

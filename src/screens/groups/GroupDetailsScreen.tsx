@@ -20,6 +20,7 @@ import { BalanceCard } from '../../components/BalanceCard';
 import { ExpenseCard } from '../../components/ExpenseCard';
 import { Button } from '../../components/Button';
 import { MemberAvatar } from '../../components/MemberAvatar';
+import { Icon } from '../../components/Icon';
 import { formatINR } from '../../utils/currency';
 
 type GroupDetailsRouteProp = RouteProp<RootStackParamList, 'GroupDetails'>;
@@ -167,9 +168,12 @@ export const GroupDetailsScreen = () => {
               <Text style={styles.groupName} numberOfLines={2}>
                 {group?.name || 'Group Details'}
               </Text>
-              <Text style={styles.groupCreatedText}>
-                {isOwner ? '👑 You are the Group Creator' : 'Group Member'}
-              </Text>
+              <View style={styles.ownerBadgeRow}>
+                {isOwner && <Icon name="shield" size={13} color="#0284C7" />}
+                <Text style={styles.groupCreatedText}>
+                  {isOwner ? ' You are the Group Creator' : 'Group Member'}
+                </Text>
+              </View>
             </View>
 
             {/* Prominent 3-Dot Button */}
@@ -179,7 +183,7 @@ export const GroupDetailsScreen = () => {
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               activeOpacity={0.7}
             >
-              <Text style={styles.threeDotIcon}>⋮</Text>
+              <Icon name="more-vertical" size={20} color="#0F172A" />
             </TouchableOpacity>
           </View>
 
@@ -187,7 +191,8 @@ export const GroupDetailsScreen = () => {
           <View style={styles.metaRow}>
             {isDefault ? (
               <View style={styles.defaultPill}>
-                <Text style={styles.defaultPillText}>★ DEFAULT GROUP</Text>
+                <Icon name="star" size={11} color="#0284C7" />
+                <Text style={styles.defaultPillText}> DEFAULT GROUP</Text>
               </View>
             ) : (
               <TouchableOpacity
@@ -338,7 +343,9 @@ export const GroupDetailsScreen = () => {
                 navigation.navigate('Members', { groupId });
               }}
             >
-              <Text style={styles.menuItemIcon}>👥</Text>
+              <View style={styles.menuIconWrap}>
+                <Icon name="users" size={20} color="#475569" />
+              </View>
               <View style={styles.menuItemTextCol}>
                 <Text style={styles.menuItemTitle}>View & Add Members</Text>
                 <Text style={styles.menuItemSub}>{groupMembers.length} active flatmates</Text>
@@ -349,7 +356,9 @@ export const GroupDetailsScreen = () => {
               style={styles.menuItem}
               onPress={handleCopyInviteCode}
             >
-              <Text style={styles.menuItemIcon}>📋</Text>
+              <View style={styles.menuIconWrap}>
+                <Icon name="copy" size={20} color="#475569" />
+              </View>
               <View style={styles.menuItemTextCol}>
                 <Text style={styles.menuItemTitle}>Copy Invite Code</Text>
                 <Text style={styles.menuItemSub}>Code: {group?.inviteCode || 'N/A'}</Text>
@@ -364,7 +373,9 @@ export const GroupDetailsScreen = () => {
                   updateDefaultGroup(groupId);
                 }}
               >
-                <Text style={styles.menuItemIcon}>⭐</Text>
+                <View style={styles.menuIconWrap}>
+                  <Icon name="star" size={20} color="#475569" />
+                </View>
                 <View style={styles.menuItemTextCol}>
                   <Text style={styles.menuItemTitle}>Set as Default Group</Text>
                   <Text style={styles.menuItemSub}>Show on Home Screen</Text>
@@ -378,7 +389,9 @@ export const GroupDetailsScreen = () => {
               onPress={handleDeleteGroup}
               disabled={deleting}
             >
-              <Text style={styles.menuItemIcon}>🗑️</Text>
+              <View style={styles.menuIconWrap}>
+                <Icon name="trash-2" size={20} color="#DC2626" />
+              </View>
               <View style={styles.menuItemTextCol}>
                 <Text style={styles.deleteMenuTitle}>Delete Group</Text>
                 <Text style={styles.deleteMenuSub}>Permanently delete all expenses & data</Text>
@@ -689,6 +702,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
     marginTop: 2,
+  },
+  ownerBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+  menuIconWrap: {
+    width: 32,
+    alignItems: 'center',
+    marginRight: 12,
   },
   menuItem: {
     flexDirection: 'row',
