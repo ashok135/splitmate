@@ -110,11 +110,17 @@ export const groupService = {
       joinedAt: now,
     };
 
+    const currentMemberIds = Array.isArray(group.memberIds) ? group.memberIds : [];
+    const updatedMemberIds = currentMemberIds.includes(user.uid)
+      ? currentMemberIds
+      : [...currentMemberIds, user.uid];
+    const updatedMemberCount = updatedMemberIds.length;
+
     const batch = firestore().batch();
     batch.set(memberRef, newMember);
     batch.update(groupDoc.ref, {
-      memberCount: firestore.FieldValue.increment(1),
-      memberIds: firestore.FieldValue.arrayUnion(user.uid),
+      memberCount: updatedMemberCount,
+      memberIds: updatedMemberIds,
       updatedAt: now,
     });
 
@@ -128,7 +134,7 @@ export const groupService = {
 
     // Send member joined notification to other group members
     try {
-      const targetUserIds = (group.memberIds || []).filter((id) => id !== user.uid);
+      const targetUserIds = currentMemberIds.filter((id) => id !== user.uid);
       if (targetUserIds.length > 0) {
         await notificationService.sendMemberJoinedNotification({
           groupId,
@@ -144,8 +150,8 @@ export const groupService = {
 
     return {
       ...group,
-      memberCount: (group.memberCount || 1) + 1,
-      memberIds: [...(group.memberIds || []), user.uid],
+      memberCount: updatedMemberCount,
+      memberIds: updatedMemberIds,
     };
   },
 
@@ -232,17 +238,20 @@ export const groupService = {
    * Remove a member from a group (Owner/Admin only)
    */
   async removeMember(groupId: string, memberUid: string): Promise<void> {
-    const batch = firestore().batch();
-    const memberRef = firestore()
-      .collection('groups')
-      .doc(groupId)
-      .collection('members')
-      .doc(memberUid);
     const groupRef = firestore().collection('groups').doc(groupId);
+    const groupDoc = await groupRef.get();
+    const groupData = groupDoc.data() as Group | undefined;
 
+    const currentMemberIds = Array.isArray(groupData?.memberIds) ? groupData!.memberIds : [];
+    const updatedMemberIds = currentMemberIds.filter((id) => id !== memberUid);
+    const updatedCount = Math.max(0, updatedMemberIds.length);
+
+    const batch = firestore().batch();
+    const memberRef = groupRef.collection('members').doc(memberUid);
     batch.delete(memberRef);
     batch.update(groupRef, {
-      memberCount: firestore.FieldValue.increment(-1),
+      memberCount: updatedCount,
+      memberIds: updatedMemberIds,
       updatedAt: Date.now(),
     });
 
