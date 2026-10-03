@@ -1,4 +1,4 @@
-import { auth, firestore } from './firebase';
+import { auth, GoogleAuthProvider, firestore } from './firebase';
 import { UserProfile } from '../types/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -128,8 +128,7 @@ export const authService = {
         throw new Error('Google Sign-In failed: No ID token returned. Make sure Google provider is enabled in Firebase Console.');
       }
 
-      // @ts-ignore
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const googleCredential = GoogleAuthProvider.credential(idToken);
       const userCredential = await auth().signInWithCredential(googleCredential);
       const user = userCredential.user;
 

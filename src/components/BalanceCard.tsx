@@ -17,7 +17,6 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 }) => {
   const isPositive = netBalance > 0.01;
   const isNegative = netBalance < -0.01;
-  const isSettled = !isPositive && !isNegative;
 
   const getStatusText = (): string => {
     if (isPositive) return 'You are owed';

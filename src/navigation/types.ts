@@ -1,6 +1,4 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
-import { Group } from '../types/group';
-import { Expense } from '../types/expense';
 import { ParsedTransaction } from '../types/sms';
 
 export type AuthStackParamList = {

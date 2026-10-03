@@ -5,7 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  TouchableOpacity,
+  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -41,7 +41,7 @@ export const ExpenseDetailsScreen = () => {
     const fetchDetails = async () => {
       try {
         setLoading(true);
-        const [exp, mList] = await Promise.all([
+        const [exp] = await Promise.all([
           expenseService.getExpenseById(groupId, expenseId),
           fetchMembers(groupId),
         ]);
@@ -79,10 +79,11 @@ export const ExpenseDetailsScreen = () => {
     );
   };
 
-  if (!expense) {
+  if (loading || !expense) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0F172A" />
           <Text style={styles.loadingText}>Loading expense...</Text>
         </View>
       </SafeAreaView>

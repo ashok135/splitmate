@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { setUser, setLoading, logoutSuccess, setDefaultGroupId } from '../store/slices/authSlice';
+import { setUser, logoutSuccess, setDefaultGroupId } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
 import { notificationService } from '../services/notificationService';
 import { smsService } from '../services/smsService';

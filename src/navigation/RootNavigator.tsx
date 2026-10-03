@@ -11,7 +11,7 @@ import { RootStackParamList } from './types';
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export const RootNavigator = () => {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   const handleNotificationPress = (notif: AppNotification) => {
     if (!navigationRef.isReady()) return;

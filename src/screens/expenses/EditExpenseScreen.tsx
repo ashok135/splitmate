@@ -40,7 +40,7 @@ export const EditExpenseScreen = () => {
     const loadExpense = async () => {
       try {
         setLoading(true);
-        const [exp, mList] = await Promise.all([
+        const [exp] = await Promise.all([
           expenseService.getExpenseById(groupId, expenseId),
           fetchMembers(groupId),
         ]);

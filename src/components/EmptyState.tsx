@@ -21,7 +21,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionTitle,
   onAction,
 }) => {
-  const activeIcon = iconName || 'inbox';
+  const activeIcon = iconName || icon || 'inbox';
   return (
     <View style={styles.container}>
       <View style={styles.iconCircle}>

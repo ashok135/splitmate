@@ -36,7 +36,9 @@ export const SplitSelector: React.FC<SplitSelectorProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Split Type</Text>
+      <Text style={styles.sectionTitle}>
+        Split Type {totalAmount > 0 ? `(${formatINR(totalAmount)})` : ''}
+      </Text>
 
       {/* Split Tabs */}
       <View style={styles.tabContainer}>
