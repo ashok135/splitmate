@@ -247,66 +247,21 @@ export const MonthlyHistoryList: React.FC<MonthlyHistoryListProps> = ({
                         {item.title}
                       </Text>
 
-                      {/* Who Paid */}
-                      <Text style={styles.txPayerText} numberOfLines={1}>
+                      {/* Paid by Name • Date */}
+                      <Text style={styles.txSubtitle} numberOfLines={1}>
                         {item.type === 'settlement'
-                          ? item.subtitle
-                          : `Paid by ${item.isCurrentUserPayer ? 'You' : item.paidByName}`}
-                      </Text>
-
-                      {/* Date & Time */}
-                      <Text style={styles.txDateText}>
-                        {item.dateStr}
+                          ? `${item.subtitle} • ${item.dateStr}`
+                          : `Paid by ${item.isCurrentUserPayer ? 'You' : item.paidByName} • ${item.dateStr}`}
                       </Text>
                     </View>
 
-                    {/* Right Side: Total Amount + Your Calculated Share */}
+                    {/* Right Side: Clean Total Bill Amount */}
                     <View style={styles.amountCol}>
-                      {item.type === 'settlement' ? (
-                        <>
-                          <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
-                          <View style={styles.settleBadge}>
-                            <Text style={styles.settleBadgeText}>SETTLED</Text>
-                          </View>
-                        </>
-                      ) : item.isCurrentUserPayer ? (
-                        <>
-                          {/* Total Bill */}
-                          <Text style={styles.billTotalLabel}>
-                            Total: <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
-                          </Text>
-
-                          {/* Your Share Badge */}
-                          <View style={styles.shareBadgeGreen}>
-                            <Text style={styles.shareBadgeTextGreen}>
-                              Your share: {formatINR(item.userShare)}
-                            </Text>
-                          </View>
-
-                          {/* Net Lent to Others */}
-                          <Text style={styles.lentText}>
-                            +{formatINR(item.lentAmount)} to receive
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          {/* Total Bill Paid by Flatmate */}
-                          <Text style={styles.billTotalLabel}>
-                            Total: <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
-                          </Text>
-
-                          {/* Your Calculated Share Badge */}
-                          <View style={styles.shareBadgeRed}>
-                            <Text style={styles.shareBadgeTextRed}>
-                              Your share: {formatINR(item.userShare)}
-                            </Text>
-                          </View>
-
-                          {/* Net You Owe */}
-                          <Text style={styles.youOweText}>
-                            -{formatINR(item.userShare)} you owe
-                          </Text>
-                        </>
+                      <Text style={styles.billTotalNumber}>{formatINR(item.totalAmount)}</Text>
+                      {item.type === 'settlement' && (
+                        <View style={styles.settleBadge}>
+                          <Text style={styles.settleBadgeText}>SETTLED</Text>
+                        </View>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -392,72 +347,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  txPayerText: {
+  txSubtitle: {
     fontSize: 12,
-    color: '#334155',
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  txDateText: {
-    fontSize: 11,
-    color: '#94A3B8',
+    color: '#64748B',
     fontWeight: '500',
   },
   amountCol: {
     alignItems: 'flex-end',
-  },
-  billTotalLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '600',
-    marginBottom: 3,
+    justifyContent: 'center',
   },
   billTotalNumber: {
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#0F172A',
-  },
-  shareBadgeGreen: {
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
-  shareBadgeTextGreen: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#15803D',
-  },
-  lentText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#16A34A',
-  },
-  shareBadgeRed: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
-  shareBadgeTextRed: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#DC2626',
-  },
-  youOweText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#DC2626',
   },
   settleBadge: {
     backgroundColor: '#CCFBF1',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
+    marginTop: 3,
   },
   settleBadgeText: {
     fontSize: 10,
