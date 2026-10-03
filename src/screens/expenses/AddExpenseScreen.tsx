@@ -77,7 +77,15 @@ export const AddExpenseScreen = () => {
   const numAmount = parseFloat(amountStr) || 0;
 
   // Compute splits dynamically based on split type
-  const { calculatedSplits, validationMessage, isSplitValid } = useMemo(() => {
+  const {
+    calculatedSplits,
+    validationMessage,
+    isSplitValid,
+  }: {
+    calculatedSplits: Record<string, ExpenseSplit>;
+    validationMessage: string;
+    isSplitValid: boolean;
+  } = useMemo(() => {
     if (numAmount <= 0) {
       return { calculatedSplits: {}, validationMessage: '', isSplitValid: false };
     }
@@ -143,8 +151,11 @@ export const AddExpenseScreen = () => {
       Alert.alert('Select Group', 'Please choose a group for this expense');
       return;
     }
-    if (!isSplitValid) {
-      Alert.alert('Invalid Split', validationMessage || 'Please verify split amounts before saving');
+
+    // Defensive validation using validateSplits
+    const splitCheck = validateSplits(numAmount, splitType, calculatedSplits);
+    if (!isSplitValid || !splitCheck.valid) {
+      Alert.alert('Invalid Split', splitCheck.message || validationMessage || 'Please verify split amounts before saving');
       return;
     }
 
