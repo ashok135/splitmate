@@ -33,7 +33,7 @@ export const JoinGroupScreen = () => {
     try {
       setLoading(true);
       const group = await joinGroup(cleanCode);
-      Alert.alert('Success 🎉', `You have joined "${group.name}"!`, [
+      Alert.alert('Success', `You have joined "${group.name}"!`, [
         {
           text: 'Open Group',
           onPress: () =>

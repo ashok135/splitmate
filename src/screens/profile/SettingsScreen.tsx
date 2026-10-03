@@ -16,6 +16,7 @@ import { useGroups } from '../../hooks/useGroups';
 import { smsService } from '../../services/smsService';
 import { parseBankTransactionSms } from '../../utils/transactionFingerprint';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { ParsedTransaction } from '../../types/sms';
 
 export const SettingsScreen = () => {
@@ -121,7 +122,10 @@ export const SettingsScreen = () => {
 
           {/* Privacy Note */}
           <View style={styles.privacyBox}>
-            <Text style={styles.privacyTitle}>🔒 100% On-Device Local Privacy</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Icon name="shield" size={15} color="#059669" />
+              <Text style={styles.privacyTitle}> 100% On-Device Local Privacy</Text>
+            </View>
             <Text style={styles.privacyText}>
               SMS messages are parsed strictly on your device using native pattern matching. The raw
               SMS body is NEVER uploaded to Firebase or any external server. Only the confirmed
@@ -156,9 +160,16 @@ export const SettingsScreen = () => {
 
           {parsedPreview && (
             <View style={styles.previewBox}>
-              <Text style={styles.previewHeader}>
-                {parsedPreview.isTransaction ? '✅ Valid Transaction' : '❌ Non-Transaction / Filtered'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Icon
+                  name={parsedPreview.isTransaction ? 'check-circle' : 'slash'}
+                  size={15}
+                  color={parsedPreview.isTransaction ? '#059669' : '#DC2626'}
+                />
+                <Text style={[styles.previewHeader, { color: parsedPreview.isTransaction ? '#059669' : '#DC2626' }]}>
+                  {parsedPreview.isTransaction ? ' Valid Transaction' : ' Non-Transaction / Filtered'}
+                </Text>
+              </View>
               {parsedPreview.isTransaction && (
                 <>
                   <Text style={styles.previewLine}>Type: {parsedPreview.type}</Text>

@@ -8,7 +8,6 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,7 +20,7 @@ import { MonthlyHistoryList } from '../../components/MonthlyHistoryList';
 import { MonthlyReportModal } from '../../components/MonthlyReportModal';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { smsService } from '../../services/smsService';
-import { dummyDataService } from '../../services/dummyDataService';
+import { groupService } from '../../services/groupService';
 import { Icon } from '../../components/Icon';
 import { ParsedTransaction } from '../../types/sms';
 import { monthlyLedgerService } from '../../services/monthlyLedgerService';
@@ -35,7 +34,6 @@ export const HomeScreen = () => {
   const { user } = useAuth();
   const { groups, fetchUserGroups, fetchMembers, members } = useGroups();
   const [refreshing, setRefreshing] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [detectedTx, setDetectedTx] = useState<ParsedTransaction | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
 
@@ -103,8 +101,14 @@ export const HomeScreen = () => {
   };
 
   useEffect(() => {
-    fetchUserGroups();
-  }, [fetchUserGroups]);
+    const init = async () => {
+      if (user?.uid) {
+        await groupService.purgeDemoGroups(user.uid);
+      }
+      await fetchUserGroups();
+    };
+    init();
+  }, [fetchUserGroups, user?.uid]);
 
   useFocusEffect(
     useCallback(() => {
@@ -152,35 +156,6 @@ export const HomeScreen = () => {
     }
   };
 
-  // Seed 4-Member Dummy Data
-  const handleSeedDemoData = async () => {
-    if (!user) return;
-    Alert.alert(
-      '⚡ Load 4-Member Flatmates Demo',
-      'This will create a complete active group "Apartment 402 Flatmates" with 4 members (You, Rahul, Priya, Amit), realistic monthly expenses (Rent, Swiggy, WiFi, Groceries), and settlements.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Load Demo Group',
-          onPress: async () => {
-            try {
-              setSeeding(true);
-              const group = await dummyDataService.seedFourMemberData(user);
-              await fetchUserGroups();
-              const mList = await fetchMembers(group.groupId);
-              await refreshGroupData(group.groupId, mList);
-              Alert.alert('Demo Loaded!', '4-member group created with full monthly expenses and balances.');
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to create demo data');
-            } finally {
-              setSeeding(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -199,22 +174,20 @@ export const HomeScreen = () => {
           </View>
 
           <View style={styles.headerActionRow}>
-            {/* Quick Demo Button */}
-            <TouchableOpacity
-              style={styles.demoPillBtn}
-              onPress={handleSeedDemoData}
-              disabled={seeding}
-              activeOpacity={0.7}
-            >
-              {seeding ? (
-                <ActivityIndicator size="small" color="#4F46E5" />
-              ) : (
+            {defaultGroup && (
+              <TouchableOpacity
+                style={styles.membersPillBtn}
+                onPress={() => navigation.navigate('Members', { groupId: defaultGroup.groupId })}
+                activeOpacity={0.7}
+              >
                 <View style={styles.iconTextInline}>
                   <Icon name="users" size={13} color="#4F46E5" />
-                  <Text style={styles.demoPillText}> 4 Members</Text>
+                  <Text style={styles.membersPillText}>
+                    {' '}{groupMembers.length || defaultGroup.memberCount || 1} Members
+                  </Text>
                 </View>
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.settingsIconBtn}
@@ -443,7 +416,7 @@ export const HomeScreen = () => {
             <Icon name="users" size={40} color="#64748B" />
             <Text style={styles.noGroupTitle}>No Active Group</Text>
             <Text style={styles.noGroupSub}>
-              Create a group or load the 4-member flatmates demo to start tracking and monthly settlements.
+              Create a group with your flatmates or join an existing group to start tracking and monthly settlements.
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
               <Button
@@ -452,9 +425,9 @@ export const HomeScreen = () => {
                 style={{ flex: 1 }}
               />
               <Button
-                title="Load 4-Member Demo"
+                title="Join Group"
                 variant="outline"
-                onPress={handleSeedDemoData}
+                onPress={() => navigation.navigate('JoinGroup')}
                 style={{ flex: 1 }}
               />
             </View>
@@ -766,7 +739,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  demoPillBtn: {
+  membersPillBtn: {
     backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 7,
@@ -774,7 +747,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#C7D2FE',
   },
-  demoPillText: {
+  membersPillText: {
     fontSize: 12,
     fontWeight: '800',
     color: '#4F46E5',

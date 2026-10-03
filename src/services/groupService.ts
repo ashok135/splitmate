@@ -182,7 +182,13 @@ export const groupService = {
         console.warn('Query by createdBy failed:', e);
       }
 
-      return Array.from(groupMap.values());
+      const allGroups = Array.from(groupMap.values());
+      return allGroups.filter(
+        (g) =>
+          g.name !== 'Apartment 402 Flatmates' &&
+          !g.inviteCode?.startsWith('FLAT') &&
+          !(Array.isArray(g.memberIds) && g.memberIds.some((id: string) => id.startsWith('demo_user_')))
+      );
     } catch (err) {
       console.warn('Error fetching user groups:', err);
       return [];
@@ -249,4 +255,57 @@ export const groupService = {
   async deleteGroup(groupId: string): Promise<void> {
     await firestore().collection('groups').doc(groupId).delete();
   },
+
+  /**
+   * Purge demo data/group if present so account starts 100% clean in production
+   */
+  async purgeDemoGroups(userId: string): Promise<boolean> {
+    try {
+      const snap = await firestore()
+        .collection('groups')
+        .where('createdBy', '==', userId)
+        .get();
+
+      let purged = false;
+      for (const doc of snap.docs) {
+        const data = doc.data();
+        if (
+          data.name === 'Apartment 402 Flatmates' ||
+          (data.inviteCode && typeof data.inviteCode === 'string' && data.inviteCode.startsWith('FLAT')) ||
+          (Array.isArray(data.memberIds) && data.memberIds.some((id: string) => id.startsWith('demo_user_')))
+        ) {
+          const expSnap = await doc.ref.collection('expenses').get();
+          for (const exp of expSnap.docs) {
+            await exp.ref.delete();
+          }
+          const setSnap = await doc.ref.collection('settlements').get();
+          for (const s of setSnap.docs) {
+            await s.ref.delete();
+          }
+          const memSnap = await doc.ref.collection('members').get();
+          for (const m of memSnap.docs) {
+            await m.ref.delete();
+          }
+          await doc.ref.delete();
+          purged = true;
+        }
+      }
+
+      if (purged) {
+        try {
+          await firestore().collection('users').doc(userId).update({
+            defaultGroupId: null,
+            updatedAt: Date.now(),
+          });
+        } catch {
+          // ignore user update error if doc doesn't exist
+        }
+      }
+      return purged;
+    } catch (err) {
+      console.warn('Error purging demo groups:', err);
+      return false;
+    }
+  },
 };
+

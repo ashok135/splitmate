@@ -15,6 +15,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGroups } from '../../hooks/useGroups';
 import { MemberAvatar } from '../../components/MemberAvatar';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -92,10 +93,10 @@ export const ProfileScreen = () => {
             onPress={() => navigation.navigate('JoinGroup')}
           >
             <View style={styles.menuLeft}>
-              <Text style={styles.menuIcon}>🔑</Text>
+              <Icon name="key" size={18} color="#4F46E5" style={{ marginRight: 12 }} />
               <Text style={styles.menuText}>Join Group with Invite Code</Text>
             </View>
-            <Text style={styles.menuChevron}>→</Text>
+            <Icon name="chevron-right" size={18} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 
@@ -108,7 +109,7 @@ export const ProfileScreen = () => {
           textStyle={{ color: '#EF4444' }}
         />
 
-        <Text style={styles.versionText}>SplitMate v1.0.0 • Free Firebase Architecture</Text>
+        <Text style={styles.versionText}>SplitMate v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

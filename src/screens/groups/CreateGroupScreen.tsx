@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useGroups } from '../../hooks/useGroups';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -33,7 +34,7 @@ export const CreateGroupScreen = () => {
       setLoading(true);
       const group = await createNewGroup(name.trim());
       Alert.alert(
-        'Group Created 🎉',
+        'Group Created',
         `Group "${group.name}" is ready!\n\nInvite Code: ${group.inviteCode}\n\nShare this code with friends so they can join!`,
         [
           {
@@ -78,7 +79,10 @@ export const CreateGroupScreen = () => {
             />
 
             <View style={styles.infoBox}>
-              <Text style={styles.infoTitle}>💡 Invite Code</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Icon name="info" size={14} color="#D97706" />
+                <Text style={styles.infoTitle}> Invite Code</Text>
+              </View>
               <Text style={styles.infoText}>
                 We will automatically generate a unique 6-character code (like GOA7K2) that anyone
                 can use to join.

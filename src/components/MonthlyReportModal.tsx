@@ -110,7 +110,7 @@ export const MonthlyReportModal: React.FC<MonthlyReportModalProps> = ({
 
   const handleCloseAndStartFresh = () => {
     Alert.alert(
-      '🔄 Close Month & Start Fresh',
+      'Close Month & Start Fresh',
       `This will finalize the ${targetMonthLabel} statement and prepare a clean new ledger for the upcoming month starting from scratch.`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -130,7 +130,7 @@ export const MonthlyReportModal: React.FC<MonthlyReportModalProps> = ({
                 settlements,
                 userId: currentUserId,
               });
-              Alert.alert('✅ Month Finalized', `${targetMonthLabel} ledger archived. Starting fresh for the new month!`);
+              Alert.alert('Month Finalized', `${targetMonthLabel} ledger archived. Starting fresh for the new month!`);
               onMonthClosed?.();
               onClose();
             } catch (err: any) {

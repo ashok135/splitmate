@@ -18,6 +18,7 @@ import { useExpenses } from '../../hooks/useExpenses';
 import { AmountInput } from '../../components/AmountInput';
 import { SplitSelector } from '../../components/SplitSelector';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { SplitType, ExpenseSplit } from '../../types/expense';
 import {
   calculateEqualSplit,
@@ -173,7 +174,7 @@ export const AddExpenseScreen = () => {
         members: groupMembers,
       });
 
-      Alert.alert('Expense Added 🎉', `₹${numAmount} added to ${currentGroup.name}!`, [
+      Alert.alert('Expense Added', `₹${numAmount} added to ${currentGroup.name}!`, [
         { text: 'Done', onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
@@ -187,7 +188,10 @@ export const AddExpenseScreen = () => {
         {/* Source Badge if from SMS */}
         {detectedTx && (
           <View style={styles.smsNotice}>
-            <Text style={styles.smsNoticeTitle}>💰 Auto-Detected from SMS</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Icon name="zap" size={14} color="#059669" />
+              <Text style={styles.smsNoticeTitle}> Auto-Detected from SMS</Text>
+            </View>
             <Text style={styles.smsNoticeText}>
               Extracted from bank message. Please confirm group and split details.
             </Text>

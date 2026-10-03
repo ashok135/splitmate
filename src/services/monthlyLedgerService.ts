@@ -43,14 +43,14 @@ export const monthlyLedgerService = {
     const myDebts = debts.filter((d) => d.fromUserId === currentUserId);
     const debtsToMe = debts.filter((d) => d.toUserId === currentUserId);
 
-    let message = `📋 ${groupName} • ${monthLabel} Monthly Settlement\n`;
+    let message = `${groupName} • ${monthLabel} Monthly Settlement\n`;
     message += `-----------------------------------------\n`;
 
     if (myDebts.length === 0 && debtsToMe.length === 0) {
-      message += `🎉 All flatmates are completely settled up! You have ₹0 dues for ${monthLabel}.\n`;
+      message += `All flatmates are completely settled up! You have ₹0 dues for ${monthLabel}.\n`;
     } else {
       if (myDebts.length > 0) {
-        message += `👉 What you need to pay this month:\n`;
+        message += `What you need to pay this month:\n`;
         myDebts.forEach((d) => {
           message += `• Pay ${formatINR(d.amount)} to ${d.toName}\n`;
         });
@@ -58,7 +58,7 @@ export const monthlyLedgerService = {
       }
 
       if (debtsToMe.length > 0) {
-        message += `💰 Money friends owe you:\n`;
+        message += `Money friends owe you:\n`;
         debtsToMe.forEach((d) => {
           message += `• ${d.fromName} owes you ${formatINR(d.amount)}\n`;
         });
@@ -83,11 +83,11 @@ export const monthlyLedgerService = {
   ): string {
     const totalSpent = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-    let report = `📊 ${groupName.toUpperCase()} — ${monthLabel.toUpperCase()} STATEMENT\n`;
+    let report = `${groupName.toUpperCase()} — ${monthLabel.toUpperCase()} STATEMENT\n`;
     report += `=========================================\n`;
     report += `Total Group Spend: ${formatINR(totalSpent)} (${monthlyExpenses.length} expenses)\n\n`;
 
-    report += `👥 MEMBER BREAKDOWN:\n`;
+    report += `MEMBER BREAKDOWN:\n`;
     members.forEach((m) => {
       const bal = balances[m.uid];
       const paid = bal ? formatINR(bal.expensePaid ?? bal.totalPaid) : '₹0';
@@ -97,12 +97,12 @@ export const monthlyLedgerService = {
       report += `• ${m.displayName}: Paid ${paid} | Share ${share} | Net: ${netStr}\n`;
     });
 
-    report += `\n🤝 FINAL SETTLEMENT INSTRUCTIONS:\n`;
+    report += `\nFINAL SETTLEMENT INSTRUCTIONS:\n`;
     if (debts.length === 0) {
       report += `• No pending payments. All settled!\n`;
     } else {
       debts.forEach((d) => {
-        report += `• ${d.fromName} pays ${d.toName} ➔ ${formatINR(d.amount)}\n`;
+        report += `• ${d.fromName} pays ${d.toName} -> ${formatINR(d.amount)}\n`;
       });
     }
 

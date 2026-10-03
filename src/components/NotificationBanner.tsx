@@ -13,6 +13,7 @@ import { useAuth } from '../hooks/useAuth';
 import { notificationService } from '../services/notificationService';
 import { AppNotification } from '../types/notification';
 import { messaging } from '../services/firebase';
+import { Icon } from './Icon';
 
 interface NotificationBannerProps {
   onPressNotification?: (notif: AppNotification) => void;
@@ -85,7 +86,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
           const fakeNotif: AppNotification = {
             notificationId: remoteMessage.messageId || String(Date.now()),
             type: 'expense_added',
-            title: remoteMessage.notification.title || '💰 New expense',
+            title: remoteMessage.notification.title || 'New expense',
             body: remoteMessage.notification.body || 'A new expense was added to your group.',
             groupId: (remoteMessage.data?.groupId as string) || '',
             groupName: (remoteMessage.data?.groupName as string) || 'Group',
@@ -131,13 +132,17 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
         style={styles.bannerCard}
       >
         <View style={styles.iconCircle}>
-          <Text style={styles.iconText}>
-            {currentNotif.type === 'settlement_recorded'
-              ? '🤝'
-              : currentNotif.type === 'member_joined'
-              ? '👋'
-              : '💰'}
-          </Text>
+          <Icon
+            name={
+              currentNotif.type === 'settlement_recorded'
+                ? 'check-circle'
+                : currentNotif.type === 'member_joined'
+                ? 'user-plus'
+                : 'file-text'
+            }
+            size={18}
+            color="#4F46E5"
+          />
         </View>
 
         <View style={styles.contentContainer}>

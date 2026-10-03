@@ -121,7 +121,7 @@ export const notificationService = {
     const notificationId = notifRef.id;
     const now = Date.now();
 
-    const title = '💰 New expense';
+    const title = 'New expense';
     const body = `${payerName} added ₹${amount} to ${groupName}${
       description ? ` • ${description}` : ''
     }`;
@@ -221,7 +221,7 @@ export const notificationService = {
     const notificationId = notifRef.id;
     const now = Date.now();
 
-    const title = '👋 New member joined';
+    const title = 'New member joined';
     const body = `${memberName} joined ${groupName}`;
 
     const notification: AppNotification = cleanForFirestore({
