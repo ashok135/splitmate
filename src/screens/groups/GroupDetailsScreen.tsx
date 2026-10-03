@@ -72,6 +72,9 @@ const skeletonStyles = StyleSheet.create({
 });
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
+import { MonthlyHistoryList } from '../../components/MonthlyHistoryList';
+import { Modal, Clipboard } from 'react-native';
+
 export const GroupDetailsScreen = () => {
   const route = useRoute<GroupDetailsRouteProp>();
   const navigation = useNavigation<NavProp>();
@@ -85,6 +88,7 @@ export const GroupDetailsScreen = () => {
   const { expenses, settlements, balances, debts, refreshGroupData, loading } = useExpenses(groupId);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     fetchMembers(groupId).then((mList) => {
@@ -100,7 +104,8 @@ export const GroupDetailsScreen = () => {
   };
 
   const isDefault = user?.defaultGroupId === groupId;
-  const isOwner = group?.createdBy === user?.uid;
+  // If createdBy matches user.uid or is not explicitly set, allow creator actions
+  const isOwner = !group?.createdBy || group?.createdBy === user?.uid;
   const userBalance = user?.uid && balances[user.uid] ? balances[user.uid].netBalance : 0;
 
   const totalGroupExpenses = useMemo(() => {
@@ -108,19 +113,21 @@ export const GroupDetailsScreen = () => {
   }, [expenses]);
 
   const handleDeleteGroup = () => {
+    setMenuVisible(false);
     Alert.alert(
       '🗑️ Delete Group',
-      `Are you sure you want to delete "${group?.name}"? This will permanently delete all expenses and data. This cannot be undone.`,
+      `Are you sure you want to permanently delete "${group?.name}"? All expenses, settlements, and balances will be removed. This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Delete Permanently',
           style: 'destructive',
           onPress: async () => {
             try {
               setDeleting(true);
               await deleteGroup(groupId);
-              navigation.reset({ index: 0, routes: [{ name: 'Main' as any }] });
+              Alert.alert('Group Deleted', `"${group?.name || 'Group'}" was deleted successfully.`);
+              navigation.reset({ index: 0, routes: [{ name: 'MainTabs' as any }] });
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to delete group');
             } finally {
@@ -130,6 +137,13 @@ export const GroupDetailsScreen = () => {
         },
       ]
     );
+  };
+
+  const handleCopyInviteCode = () => {
+    setMenuVisible(false);
+    if (group?.inviteCode) {
+      Alert.alert('Invite Code', `Share this code with friends: ${group.inviteCode}`);
+    }
   };
 
   if (loading && expenses.length === 0 && !refreshing) {
@@ -146,47 +160,46 @@ export const GroupDetailsScreen = () => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Top Header Card */}
+        {/* Top Header Card with 3-Dot Menu */}
         <View style={styles.headerCard}>
           <View style={styles.titleRow}>
-            <Text style={styles.groupName}>{group?.name || 'Group Details'}</Text>
-            <View style={styles.pillsRow}>
-              {isDefault ? (
-                <View style={styles.defaultPill}>
-                  <Text style={styles.defaultPillText}>DEFAULT</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.setDefaultBtn}
-                  onPress={() => updateDefaultGroup(groupId)}
-                >
-                  <Text style={styles.setDefaultText}>Set Default</Text>
-                </TouchableOpacity>
-              )}
-              {isOwner && (
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={handleDeleteGroup}
-                  disabled={deleting}
-                >
-                  <Text style={styles.deleteBtnText}>🗑️ Delete</Text>
-                </TouchableOpacity>
-              )}
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.groupName} numberOfLines={2}>
+                {group?.name || 'Group Details'}
+              </Text>
+              <Text style={styles.groupCreatedText}>
+                {isOwner ? '👑 You are the Group Creator' : 'Group Member'}
+              </Text>
             </View>
+
+            {/* Prominent 3-Dot Button */}
+            <TouchableOpacity
+              style={styles.threeDotBtn}
+              onPress={() => setMenuVisible(true)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.threeDotIcon}>⋮</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Owner badge */}
-          {isOwner && (
-            <View style={styles.ownerBadge}>
-              <Text style={styles.ownerBadgeText}>👑 You created this group</Text>
-            </View>
-          )}
+          {/* Quick Info Bar */}
+          <View style={styles.metaRow}>
+            {isDefault ? (
+              <View style={styles.defaultPill}>
+                <Text style={styles.defaultPillText}>★ DEFAULT GROUP</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.setDefaultBtn}
+                onPress={() => updateDefaultGroup(groupId)}
+              >
+                <Text style={styles.setDefaultText}>Set as Default</Text>
+              </TouchableOpacity>
+            )}
 
-          {/* Invite Code row */}
-          <View style={styles.codeRow}>
-            <Text style={styles.codeLabel}>Invite Code:</Text>
             <View style={styles.codeBadge}>
-              <Text style={styles.codeText}>{group?.inviteCode || '...'}</Text>
+              <Text style={styles.codeText}>Code: {group?.inviteCode || '...'}</Text>
             </View>
           </View>
 
@@ -277,56 +290,111 @@ export const GroupDetailsScreen = () => {
           </View>
         )}
 
-        {/* Expenses List */}
+        {/* Google Pay Style Monthly Grouped Transaction History */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Expenses ({expenses.length})</Text>
+            <Text style={styles.sectionTitle}>Monthly History</Text>
+            <Text style={styles.countText}>{expenses.length} expenses</Text>
           </View>
 
-          {expenses.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No expenses yet. Tap "+ Add Expense" above!</Text>
-            </View>
-          ) : (
-            expenses.map((expense) => {
-              const payer = groupMembers.find((m) => m.uid === expense.paidBy);
-              return (
-                <ExpenseCard
-                  key={expense.expenseId}
-                  expense={expense}
-                  payerName={payer?.displayName}
-                  isCurrentUserPayer={expense.paidBy === user?.uid}
-                  onPress={() =>
-                    navigation.navigate('ExpenseDetails', {
-                      groupId,
-                      expenseId: expense.expenseId,
-                    })
-                  }
-                />
-              );
-            })
-          )}
+          <MonthlyHistoryList
+            expenses={expenses}
+            settlements={settlements}
+            members={groupMembers}
+            currentUserId={user?.uid}
+            onPressExpense={(expense) =>
+              navigation.navigate('ExpenseDetails', {
+                groupId,
+                expenseId: expense.expenseId,
+              })
+            }
+          />
         </View>
-
-        {/* Settlements History */}
-        {settlements.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Settlements History</Text>
-            {settlements.map((s) => {
-              const from = groupMembers.find((m) => m.uid === s.fromUserId)?.displayName || 'Member';
-              const to = groupMembers.find((m) => m.uid === s.toUserId)?.displayName || 'Member';
-              return (
-                <View key={s.settlementId} style={styles.settlementItem}>
-                  <Text style={styles.settlementText}>
-                    🤝 <Text style={styles.boldText}>{from}</Text> paid{' '}
-                    <Text style={styles.boldText}>{to}</Text> {formatINR(s.amount)}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
       </ScrollView>
+
+      {/* 3-Dot Options Modal / Bottom Sheet */}
+      <Modal
+        visible={menuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalGroupTitle}>{group?.name || 'Group Options'}</Text>
+              <Text style={styles.modalGroupSub}>Manage group settings & options</Text>
+            </View>
+
+            {/* Menu Items */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Members', { groupId });
+              }}
+            >
+              <Text style={styles.menuItemIcon}>👥</Text>
+              <View style={styles.menuItemTextCol}>
+                <Text style={styles.menuItemTitle}>View & Add Members</Text>
+                <Text style={styles.menuItemSub}>{groupMembers.length} active flatmates</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleCopyInviteCode}
+            >
+              <Text style={styles.menuItemIcon}>📋</Text>
+              <View style={styles.menuItemTextCol}>
+                <Text style={styles.menuItemTitle}>Copy Invite Code</Text>
+                <Text style={styles.menuItemSub}>Code: {group?.inviteCode || 'N/A'}</Text>
+              </View>
+            </TouchableOpacity>
+
+            {!isDefault && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  updateDefaultGroup(groupId);
+                }}
+              >
+                <Text style={styles.menuItemIcon}>⭐</Text>
+                <View style={styles.menuItemTextCol}>
+                  <Text style={styles.menuItemTitle}>Set as Default Group</Text>
+                  <Text style={styles.menuItemSub}>Show on Home Screen</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Delete Group Button */}
+            <TouchableOpacity
+              style={[styles.menuItem, styles.deleteMenuItem]}
+              onPress={handleDeleteGroup}
+              disabled={deleting}
+            >
+              <Text style={styles.menuItemIcon}>🗑️</Text>
+              <View style={styles.menuItemTextCol}>
+                <Text style={styles.deleteMenuTitle}>Delete Group</Text>
+                <Text style={styles.deleteMenuSub}>Permanently delete all expenses & data</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={styles.cancelMenuItem}
+              onPress={() => setMenuVisible(false)}
+            >
+              <Text style={styles.cancelMenuText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -558,5 +626,122 @@ const styles = StyleSheet.create({
   boldText: {
     fontWeight: '600',
     color: '#0F172A',
+  },
+  threeDotBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  threeDotIcon: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    lineHeight: 24,
+  },
+  groupCreatedText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 10,
+  },
+  countText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 36,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalHeader: {
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 8,
+  },
+  modalGroupTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalGroupSub: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+  },
+  menuItemIcon: {
+    fontSize: 22,
+    marginRight: 14,
+  },
+  menuItemTextCol: {
+    flex: 1,
+  },
+  menuItemTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  menuItemSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  deleteMenuItem: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginVertical: 8,
+    borderBottomWidth: 0,
+  },
+  deleteMenuTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  deleteMenuSub: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 1,
+  },
+  cancelMenuItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 6,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  cancelMenuText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#475569',
   },
 });
