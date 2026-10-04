@@ -26,13 +26,16 @@ class QuickAddActionReceiver : BroadcastReceiver() {
         val prefs = context.getSharedPreferences("splitmate_prefs", Context.MODE_PRIVATE)
         val pendingList = prefs.getStringSet("pending_quick_adds", mutableSetOf()) ?: mutableSetOf()
         val newPending = HashSet(pendingList)
-        newPending.add("$groupId|$amount|$merchant|$fingerprint|${System.currentTimeMillis()}")
+        newPending.add("$groupId|$amount|$merchant|$fingerprint|${System.currentTimeMillis()}|$groupName")
         prefs.edit().putStringSet("pending_quick_adds", newPending).apply()
 
         // Dismiss notification
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancelAll()
 
-        Toast.makeText(context, "Added ₹$amount to $groupName", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Adding ₹$amount to $groupName...", Toast.LENGTH_SHORT).show()
+
+        // If app is currently alive, tell JS immediately to process pending adds
+        SmsModule.sendPendingQuickAddEvent()
     }
 }

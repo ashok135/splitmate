@@ -2,6 +2,7 @@ import { messaging, firestore, cleanForFirestore } from './firebase';
 import { deviceService } from './deviceService';
 import { AppNotification, DeviceTokenDoc } from '../types/notification';
 import { Platform } from 'react-native';
+import { smsService } from './smsService';
 
 /**
  * Free-tier FCM and In-App notification service.
@@ -146,6 +147,17 @@ export const notificationService = {
 
     // Stored in Firestore notifications collection
     await notifRef.set(notification);
+
+    // Dispatch FCM push to other devices via high-priority FCM topic
+    await smsService.dispatchGroupPush({
+      title,
+      body,
+      groupId,
+      groupName,
+      expenseId,
+      actorId: payerId,
+      actorName: payerName,
+    });
   },
 
   /**
@@ -203,6 +215,17 @@ export const notificationService = {
     });
 
     await notifRef.set(notification);
+
+    // Dispatch FCM push to other devices via high-priority FCM topic
+    await smsService.dispatchGroupPush({
+      title,
+      body,
+      groupId,
+      groupName,
+      expenseId: settlementId,
+      actorId: fromUserId,
+      actorName: fromUserName,
+    });
   },
 
   /**
@@ -241,6 +264,38 @@ export const notificationService = {
     });
 
     await notifRef.set(notification);
+
+    // Dispatch FCM push to other devices via high-priority FCM topic
+    await smsService.dispatchGroupPush({
+      title,
+      body,
+      groupId,
+      groupName,
+      actorId: memberId,
+      actorName: memberName,
+    });
+  },
+
+  /**
+   * Subscribe to group topic for push notifications
+   */
+  async subscribeToGroupTopic(groupId: string): Promise<void> {
+    try {
+      await messaging().subscribeToTopic(`group_${groupId}`);
+    } catch (e) {
+      console.warn('Failed to subscribe to topic group_' + groupId, e);
+    }
+  },
+
+  /**
+   * Unsubscribe from group topic
+   */
+  async unsubscribeFromGroupTopic(groupId: string): Promise<void> {
+    try {
+      await messaging().unsubscribeFromTopic(`group_${groupId}`);
+    } catch (e) {
+      console.warn('Failed to unsubscribe from topic group_' + groupId, e);
+    }
   },
 
   /**
@@ -274,6 +329,14 @@ export const notificationService = {
                     data.targetUserIds.includes(userId);
                   if (isRecipient) {
                     onNotification(data);
+                    // Also trigger system heads-up notification at the top of the screen
+                    smsService.showSystemNotification({
+                      title: data.title,
+                      body: data.body,
+                      subText: data.groupName,
+                      groupId: data.groupId,
+                      expenseId: data.expenseId,
+                    });
                   }
                 }
               }

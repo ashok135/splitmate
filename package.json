@@ -1,6 +1,6 @@
 {
   "name": "splitmate",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "android": "set \"JAVA_HOME=C:\\Program Files\\Microsoft\\jdk-17.0.20.101-hotspot\" && set \"ANDROID_HOME=C:\\Users\\Ashok Chingari\\AppData\\Local\\Android\\Sdk\" && set \"PATH=C:\\Program Files\\Microsoft\\jdk-17.0.20.101-hotspot\\bin;C:\\Users\\Ashok Chingari\\AppData\\Local\\Android\\Sdk\\platform-tools;%PATH%\" && react-native run-android",

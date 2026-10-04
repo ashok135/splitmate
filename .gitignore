@@ -23,6 +23,9 @@ ios/*.xcodeproj/xcuserdata
 .env
 .env.local
 .env.production
+service-account.json
+**/service-account.json
+android/app/src/main/assets/service-account.json
 
 # IDE and OS files
 .DS_Store

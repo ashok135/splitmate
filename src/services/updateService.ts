@@ -2,8 +2,8 @@ import { Linking, Alert } from 'react-native';
 import { firestore } from './firebase';
 import { AppUpdateInfo } from '../types/update';
 
-export const CURRENT_VERSION_CODE = 1;
-export const CURRENT_VERSION_NAME = '1.0.0';
+export const CURRENT_VERSION_CODE = 2;
+export const CURRENT_VERSION_NAME = '2.0.0';
 
 const GITHUB_VERSION_URL =
   'https://raw.githubusercontent.com/ashok135/splitmate/main/version.json';

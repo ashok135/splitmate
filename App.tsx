@@ -6,22 +6,31 @@ import { store } from './src/store';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import messaging from '@react-native-firebase/messaging';
-
-// Register background FCM handler safely
-try {
-  messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-    console.log('Background FCM message received:', remoteMessage);
-  });
-} catch (e) {
-  console.log('FCM background setup:', e);
-}
+import { smsService } from './src/services/smsService';
 
 export default function App() {
   useEffect(() => {
-    // Listen for foreground FCM messages safely
+    // Listen for incoming FCM messages in foreground and show heads-up top popup
     try {
       const unsubscribe = messaging().onMessage(async (remoteMessage) => {
         console.log('Foreground FCM notification received:', remoteMessage);
+        if (remoteMessage) {
+          const rawTitle = remoteMessage.notification?.title || remoteMessage.data?.title || 'SplitMate';
+          const rawBody = remoteMessage.notification?.body || remoteMessage.data?.body || '';
+          const title = typeof rawTitle === 'string' ? rawTitle : JSON.stringify(rawTitle);
+          const body = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
+          const groupId = remoteMessage.data?.groupId;
+          const expenseId = remoteMessage.data?.expenseId;
+
+          if (title && body) {
+            smsService.showSystemNotification({
+              title,
+              body,
+              groupId: typeof groupId === 'string' ? groupId : undefined,
+              expenseId: typeof expenseId === 'string' ? expenseId : undefined,
+            });
+          }
+        }
       });
       return unsubscribe;
     } catch (e) {

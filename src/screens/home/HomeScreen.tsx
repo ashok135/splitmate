@@ -8,6 +8,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  AppState,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -120,7 +121,51 @@ export const HomeScreen = () => {
     }, [defaultGroupId, fetchMembers, refreshGroupData])
   );
 
-  // Listen for native SMS transactions
+  // Synchronize any pending quick adds from notification [ADD] button clicks
+  const syncPendingSms = useCallback(async () => {
+    if (!user) return;
+    try {
+      const count = await smsService.syncPendingQuickAdds({
+        user,
+        onExpenseCreated: () => {
+          if (defaultGroupId) {
+            fetchMembers(defaultGroupId).then((mList) => {
+              refreshGroupData(defaultGroupId, mList);
+            });
+          }
+        },
+      });
+      if (count > 0 && defaultGroupId) {
+        const mList = await fetchMembers(defaultGroupId);
+        await refreshGroupData(defaultGroupId, mList);
+        Alert.alert(
+          'Bank Transaction Added',
+          `${count} expense${count > 1 ? 's were' : ' was'} automatically added from bank SMS to ${defaultGroup?.name || 'your group'}!`
+        );
+      }
+    } catch (e) {
+      console.warn('Sync pending SMS error:', e);
+    }
+  }, [user, defaultGroupId, defaultGroup?.name, fetchMembers, refreshGroupData]);
+
+  // Sync when screen focuses, mounts, or app returns to foreground
+  useEffect(() => {
+    syncPendingSms();
+    const sub = smsService.subscribeToPendingQuickAddEvents(() => {
+      syncPendingSms();
+    });
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        syncPendingSms();
+      }
+    });
+    return () => {
+      sub.remove();
+      appStateSub.remove();
+    };
+  }, [syncPendingSms]);
+
+  // Listen for native SMS transactions in foreground
   useEffect(() => {
     const sub = smsService.subscribeToSmsTransactions((tx) => {
       setDetectedTx(tx);
@@ -149,6 +194,8 @@ export const HomeScreen = () => {
         members: memberList,
       });
 
+      // Immediately refresh group data to recalculate balances and update UI
+      await refreshGroupData(defaultGroup.groupId, memberList);
       setDetectedTx(null);
       Alert.alert('Success', `₹${tx.amount} added to ${defaultGroup.name}`);
     } catch (err: any) {
@@ -348,67 +395,63 @@ export const HomeScreen = () => {
               </View>
             </View>
 
-            {/* Fast Action CTA inside Hero Card */}
+            {/* Fast Action CTA inside Hero Card - Always accessible to all members and admins */}
             <View style={styles.heroActionRow}>
-              {userBalance < 0 ? (
+              {/* Primary + Add Expense Button */}
+              <TouchableOpacity
+                style={styles.heroAddBtn}
+                onPress={() => navigation.navigate('AddExpense', { groupId: defaultGroup.groupId })}
+                activeOpacity={0.8}
+              >
+                <View style={styles.iconTextInline}>
+                  <Icon name="plus" size={17} color="#FFFFFF" />
+                  <Text style={styles.heroAddBtnText}> Add Expense</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Secondary Actions: Pay Share & Record Received */}
+              <View style={[styles.heroTwoBtnsRow, { marginTop: 10 }]}>
                 <TouchableOpacity
-                  style={styles.heroSettleBtn}
+                  style={[
+                    styles.heroSettleBtn,
+                    { flex: 1.15 },
+                    userBalance < 0 ? styles.heroSettleBtnOwe : styles.heroSettleBtnNeutral,
+                  ]}
                   onPress={() =>
                     navigation.navigate('Settlement', {
                       groupId: defaultGroup.groupId,
                       fromUserId: user?.uid,
-                      suggestedAmount: Math.abs(userBalance),
+                      suggestedAmount: userBalance < 0 ? Math.abs(userBalance) : undefined,
                     })
                   }
                   activeOpacity={0.8}
                 >
                   <View style={styles.iconTextInline}>
-                    <Icon name="arrow-up-right" size={16} color="#FFFFFF" />
+                    <Icon name="arrow-up-right" size={15} color="#FFFFFF" />
                     <Text style={styles.heroSettleBtnText}>
-                      {' '}Pay Your Share ({formatINR(Math.abs(userBalance))})
+                      {userBalance < 0
+                        ? ` Pay Share (${formatINR(Math.abs(userBalance))})`
+                        : ' Pay Dues'}
                     </Text>
                   </View>
                 </TouchableOpacity>
-              ) : userBalance > 0 ? (
-                <View style={styles.heroTwoBtnsRow}>
-                  <TouchableOpacity
-                    style={[styles.heroAddBtn, { flex: 1 }]}
-                    onPress={() => navigation.navigate('AddExpense', { groupId: defaultGroup.groupId })}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.iconTextInline}>
-                      <Icon name="plus" size={16} color="#FFFFFF" />
-                      <Text style={styles.heroAddBtnText}> Add Expense</Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.heroReceiveBtn, { flex: 1.2 }]}
-                    onPress={() =>
-                      navigation.navigate('Settlement', {
-                        groupId: defaultGroup.groupId,
-                        toUserId: user?.uid,
-                      })
-                    }
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.iconTextInline}>
-                      <Icon name="arrow-down-left" size={16} color="#FFFFFF" />
-                      <Text style={styles.heroReceiveBtnText}> Record Received</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              ) : (
+
                 <TouchableOpacity
-                  style={styles.heroAddBtn}
-                  onPress={() => navigation.navigate('AddExpense', { groupId: defaultGroup.groupId })}
+                  style={[styles.heroReceiveBtn, { flex: 1 }]}
+                  onPress={() =>
+                    navigation.navigate('Settlement', {
+                      groupId: defaultGroup.groupId,
+                      toUserId: user?.uid,
+                    })
+                  }
                   activeOpacity={0.8}
                 >
                   <View style={styles.iconTextInline}>
-                    <Icon name="plus" size={16} color="#FFFFFF" />
-                    <Text style={styles.heroAddBtnText}> Add New Expense</Text>
+                    <Icon name="arrow-down-left" size={15} color="#FFFFFF" />
+                    <Text style={styles.heroReceiveBtnText}> Received</Text>
                   </View>
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
           </View>
         ) : (
@@ -922,10 +965,15 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   heroSettleBtn: {
-    backgroundColor: '#E11D48',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  heroSettleBtnOwe: {
+    backgroundColor: '#E11D48',
+  },
+  heroSettleBtnNeutral: {
+    backgroundColor: '#334155',
   },
   heroSettleBtnText: {
     color: '#FFFFFF',

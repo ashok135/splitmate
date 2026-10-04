@@ -30,6 +30,15 @@ class SmsModule(private val reactContext: ReactApplicationContext) :
             context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
                 .emit("onBankTransactionDetected", map)
         }
+
+        fun sendPendingQuickAddEvent() {
+            val module = instance ?: return
+            val context = module.reactContext
+            if (!context.hasActiveReactInstance()) return
+
+            context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                .emit("onPendingQuickAddUpdated", Arguments.createMap())
+        }
     }
 
     init {
@@ -68,19 +77,74 @@ class SmsModule(private val reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun getPendingQuickAdds(promise: Promise) {
-        val prefs = reactContext.getSharedPreferences("splitmate_prefs", Context.MODE_PRIVATE)
-        val set = prefs.getStringSet("pending_quick_adds", setOf()) ?: setOf()
-        val array = Arguments.createArray()
-        for (item in set) {
-            array.pushString(item)
+        try {
+            val prefs = reactContext.getSharedPreferences("splitmate_prefs", Context.MODE_PRIVATE)
+            val set = prefs.getStringSet("pending_quick_adds", setOf()) ?: setOf()
+            val array = Arguments.createArray()
+            for (item in set) {
+                array.pushString(item)
+            }
+            promise.resolve(array)
+        } catch (e: Exception) {
+            promise.reject("ERR_PENDING_QUICK_ADDS", e.message)
         }
-        promise.resolve(array)
     }
 
     @ReactMethod
-    fun clearPendingQuickAdds() {
-        val prefs = reactContext.getSharedPreferences("splitmate_prefs", Context.MODE_PRIVATE)
-        prefs.edit().remove("pending_quick_adds").apply()
+    fun clearPendingQuickAdds(promise: Promise) {
+        try {
+            val prefs = reactContext.getSharedPreferences("splitmate_prefs", Context.MODE_PRIVATE)
+            prefs.edit().remove("pending_quick_adds").apply()
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERR_CLEAR_QUICK_ADDS", e.message)
+        }
+    }
+
+    @ReactMethod
+    fun showSystemNotification(
+        title: String,
+        body: String,
+        subText: String?,
+        groupId: String?,
+        expenseId: String?
+    ) {
+        NotificationHelper.showAppNotification(
+            reactContext,
+            title,
+            body,
+            subText,
+            groupId,
+            expenseId
+        )
+    }
+
+    @ReactMethod
+    fun dispatchGroupPush(
+        title: String,
+        body: String,
+        groupId: String,
+        groupName: String,
+        expenseId: String?,
+        actorId: String,
+        actorName: String,
+        promise: Promise
+    ) {
+        try {
+            FcmHelper.sendGroupPush(
+                reactContext,
+                title,
+                body,
+                groupId,
+                groupName,
+                expenseId,
+                actorId,
+                actorName
+            )
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERR_FCM_DISPATCH", e.message)
+        }
     }
 
     @ReactMethod

@@ -109,7 +109,7 @@ export const ProfileScreen = () => {
           textStyle={{ color: '#EF4444' }}
         />
 
-        <Text style={styles.versionText}>SplitMate v1.0.0</Text>
+        <Text style={styles.versionText}>SplitMate v2.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -10,6 +10,7 @@ import {
   setGroupError,
 } from '../store/slices/groupSlice';
 import { groupService } from '../services/groupService';
+import { notificationService } from '../services/notificationService';
 import { Group } from '../types/group';
 
 export const useGroups = () => {
@@ -25,6 +26,10 @@ export const useGroups = () => {
       dispatch(setGroupLoading(true));
       const userGroups = await groupService.getUserGroups(user.uid);
       dispatch(setGroups(userGroups));
+      // Subscribe to FCM push topics for all user groups
+      userGroups.forEach((g) => {
+        notificationService.subscribeToGroupTopic(g.groupId);
+      });
     } catch (err: any) {
       dispatch(setGroupError(err.message || 'Failed to load groups'));
     }
@@ -36,6 +41,7 @@ export const useGroups = () => {
       dispatch(setGroupLoading(true));
       const group = await groupService.createGroup(name, user);
       dispatch(addGroup(group));
+      notificationService.subscribeToGroupTopic(group.groupId);
       return group;
     } catch (err: any) {
       dispatch(setGroupError(err.message));
@@ -49,6 +55,7 @@ export const useGroups = () => {
       dispatch(setGroupLoading(true));
       const group = await groupService.joinGroupByInviteCode(inviteCode, user);
       dispatch(addGroup(group));
+      notificationService.subscribeToGroupTopic(group.groupId);
       return group;
     } catch (err: any) {
       dispatch(setGroupError(err.message));
@@ -74,6 +81,7 @@ export const useGroups = () => {
     try {
       dispatch(setGroupLoading(true));
       await groupService.deleteGroup(groupId);
+      notificationService.unsubscribeFromGroupTopic(groupId);
       const updated = groups.filter((g) => g.groupId !== groupId);
       dispatch(setGroups(updated));
     } catch (err: any) {
@@ -87,6 +95,7 @@ export const useGroups = () => {
     try {
       dispatch(setGroupLoading(true));
       await groupService.leaveGroup(groupId, user);
+      notificationService.unsubscribeFromGroupTopic(groupId);
       const updated = groups.filter((g) => g.groupId !== groupId);
       dispatch(setGroups(updated));
     } catch (err: any) {
